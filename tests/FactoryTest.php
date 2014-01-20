@@ -2,10 +2,8 @@
 
 use React\Socket\ConnectionInterface;
 
-use Clue\Redis\React\Server;
-
-use Clue\Redis\React\Client;
-
+use Clue\Redis\React\Server\Server;
+use Clue\Redis\React\Client\Client;
 use Clue\Redis\React\Factory;
 
 class FactoryTest extends TestCase
@@ -110,7 +108,7 @@ class FactoryTest extends TestCase
             $server = $s;
         });
 
-        $this->assertNotNull($server);
+        $this->assertNotNull($server, 'Server instance must be set by now');
 
         // we expect a single single client
         $server->on('connection', $this->expectCallableOnce());

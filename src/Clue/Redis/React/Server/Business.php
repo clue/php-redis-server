@@ -10,8 +10,11 @@ class Business
 {
     private $storage;
 
-    public function __construct(Storage $storage)
+    public function __construct(Storage $storage = null)
     {
+        if ($storage === null) {
+            $storage = new Storage();
+        }
         $this->storage = $storage;
     }
 

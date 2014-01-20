@@ -4,14 +4,15 @@ namespace Clue\Redis\React\Client;
 
 use Evenement\EventEmitter;
 use React\Stream\Stream;
-use Clue\Redis\Protocol\ProtocolInterface;
-use Clue\Redis\Protocol\ParserException;
-use Clue\Redis\Protocol\ErrorReplyException;
+use Clue\Redis\Protocol\Parser\ParserInterface;
+use Clue\Redis\Protocol\Parser\ParserException;
+use Clue\Redis\Protocol\Serializer\SerializerInterface;
 use Clue\Redis\Protocol\Factory as ProtocolFactory;
 use Clue\Redis\React\Client\Request;
 use React\Promise\When;
 use UnderflowException;
 use RuntimeException;
+use Clue\Redis\Protocol\Model\ModelInterface;
 
 class Client extends EventEmitter
 {
@@ -23,7 +24,7 @@ class Client extends EventEmitter
 
     public function __construct(Stream $stream, ParserInterface $parser = null, SerializerInterface $serializer = null)
     {
-        if ($paser === null || $serializer === null) {
+        if ($parser === null || $serializer === null) {
             $factory = new ProtocolFactory();
             if ($parser === null) {
                 $parser = $factory->createParser();
@@ -78,7 +79,7 @@ class Client extends EventEmitter
         /* Build the Redis unified protocol command */
         array_unshift($args, $name);
 
-        $this->stream->write($this->serializer->createRequest($args));
+        $this->stream->write($this->serializer->createRequestMessage($args));
 
         $request = new Request($name);
         $this->requests []= $request;
@@ -86,7 +87,7 @@ class Client extends EventEmitter
         return $request->promise();
     }
 
-    public function handleReply($data)
+    public function handleReply(ModelInterface $data)
     {
         $this->emit('message', array($data, $this));
 

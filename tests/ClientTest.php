@@ -1,12 +1,9 @@
 <?php
 
 use React\Stream\Stream;
-
 use React\Stream\ReadableStream;
-
 use Clue\Redis\React\Factory;
-
-use Clue\Redis\React\Client;
+use Clue\Redis\React\Client\Client;
 
 class ClientTest extends TestCase
 {

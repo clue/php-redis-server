@@ -7,6 +7,7 @@ use React\Socket\Server as ServerSocket;
 use React\EventLoop\LoopInterface;
 use Clue\Redis\Protocol\Factory as ProtocolFactory;
 use React\Socket\Connection;
+use Clue\Redis\Protocol\Model\ErrorReply;
 
 /**
  * Dummy redis server implementation
@@ -59,17 +60,19 @@ class Server extends EventEmitter
 
     public function handleRequest($request, Connection $connection)
     {
-        $this->emit('request', array($data, $connection));
+        $this->emit('request', array($request, $connection));
 
         if (!is_array($request)) {
-            $connection->write($this->serializer->createErrorReply('ERR Malformed request. Bye!'));
+            $model = new ErrorReply('ERR Malformed request. Bye!');
+            $connection->write($model->getMessageSerialized());
             $connection->end();
             return;
         }
 
         $method = strtolower(array_shift($request));
         if (!is_callable(array($this->business, $method))) {
-            $connection->write($this->serializer->createErrorReply('ERR Unknown or disabled command \'' . $method . '\''));
+            $model = new ErrorReply('ERR Unknown or disabled command \'' . $method . '\'');
+            $connection->write($model->getMessageSerialized());
             return;
         }
 
@@ -77,7 +80,7 @@ class Server extends EventEmitter
             $ret = call_user_func_array(array($this->business, $method), $request);
         }
         catch (Exception $e) {
-            $connection->write($this->serializer->createErrorReply($e));
+            $connection->write($this->serializer->createReplyModel($e)->getMessageSerialized());
             return;
         }
 
