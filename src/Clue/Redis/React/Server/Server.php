@@ -16,16 +16,21 @@ use React\Socket\Connection;
  */
 class Server extends EventEmitter
 {
-    public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null)
+    public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, Business $business = null)
     {
         if ($protocol === null) {
             $protocol = new ProtocolFactory();
+        }
+
+        if ($business === null) {
+            $business = new Business();
         }
 
         $this->socket = $socket;
         $this->loop = $loop;
         $this->protocol = $protocol;
         $this->serializer = $protocol->createSerializer();
+        $this->business = $business;
 
         $socket->on('connection', array($this, 'handleConnection'));
     }
@@ -52,11 +57,31 @@ class Server extends EventEmitter
         $this->emit('connection', array($connection, $this));
     }
 
-    public function handleRequest($data, Connection $connection)
+    public function handleRequest($request, Connection $connection)
     {
         $this->emit('request', array($data, $connection));
 
-        $connection->write("-ERR Dummy redis server does not expose any methods\r\n");
+        if (!is_array($request)) {
+            $connection->write($this->serializer->createErrorReply('ERR Malformed request. Bye!'));
+            $connection->end();
+            return;
+        }
+
+        $method = strtolower(array_shift($request));
+        if (!is_callable(array($this->business, $method))) {
+            $connection->write($this->serializer->createErrorReply('ERR Unknown or disabled command \'' . $method . '\''));
+            return;
+        }
+
+        try {
+            $ret = call_user_func_array(array($this->business, $method), $request);
+        }
+        catch (Exception $e) {
+            $connection->write($this->serializer->createErrorReply($e));
+            return;
+        }
+
+        $connection->write($this->serializer->createReply($ret));
     }
 
     public function close()
