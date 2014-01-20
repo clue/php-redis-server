@@ -1,6 +1,6 @@
 <?php
 
-namespace Clue\Redis\React;
+namespace Clue\Redis\React\Client;
 
 use Clue\Redis\Protocol\ErrorReplyException;
 use React\Promise\Deferred;
