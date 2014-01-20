@@ -16,30 +16,36 @@ use React\Socket\Connection;
  */
 class Server extends EventEmitter
 {
-    public function __construct(ServerSocket $socket, LoopInterface $loop)
+    public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null)
     {
+        if ($protocol === null) {
+            $protocol = new ProtocolFactory();
+        }
+
         $this->socket = $socket;
         $this->loop = $loop;
+        $this->protocol = $protocol;
+        $this->serializer = $protocol->createSerializer();
 
         $socket->on('connection', array($this, 'handleConnection'));
     }
 
     public function handleConnection(Connection $connection)
     {
-        $protocol = ProtocolFactory::create();
+        $parser = $this->protocol->createParser();
         $that = $this;
 
-        $connection->on('data', function ($data) use ($protocol, $that, $connection) {
+        $connection->on('data', function ($data) use ($parser, $that, $connection) {
             try {
-                $protocol->pushIncoming($data);
+                $parser->pushIncoming($data);
             }
             catch (ParserException $e) {
                 $connection->emit('error', $e);
                 $connection->close();
                 return;
             }
-            while ($protocol->hasIncoming()) {
-                $that->handleRequest($protocol->popIncoming(), $connection);
+            while ($parser->hasIncoming()) {
+                $that->handleRequest($parser->popIncoming(), $connection);
             }
         });
 
