@@ -1,17 +1,14 @@
 <?php
 
 use Clue\Redis\Server\Client;
-use Clue\Redis\React\Factory;
+use Clue\Redis\Server\Factory;
 use Clue\Redis\Server\Server;
 use Clue\Redis\Protocol\Model\ModelInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = React\EventLoop\Factory::create();
-$factory = new React\Dns\Resolver\Factory();
-$resolver = $factory->create('6.6.6.6', $loop);
-$connector = new React\SocketClient\Connector($loop, $resolver);
-$factory = new Factory($loop, $connector);
+$factory = new Factory($loop);
 
 $address = '127.0.0.1:1337';
 
