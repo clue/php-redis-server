@@ -7,7 +7,6 @@ use React\Promise\When;
 use React\EventLoop\LoopInterface;
 use React\SocketClient\ConnectorInterface;
 use React\Stream\Stream;
-use Clue\Redis\React\Client\Client;
 use Clue\Redis\React\Server\Server;
 use Clue\Redis\Protocol\Factory as ProtocolFactory;
 use InvalidArgumentException;
@@ -20,46 +19,14 @@ class Factory
     private $connector;
     private $protocol;
 
-    public function __construct(LoopInterface $loop, ConnectorInterface $connector = null, ProtocolFactory $protocol = null)
+    public function __construct(LoopInterface $loop, ProtocolFactory $protocol = null)
     {
         $this->loop = $loop;
-        $this->connector = $connector;
 
         if ($protocol === null) {
             $protocol = new ProtocolFactory();
         }
         $this->protocol = $protocol;
-    }
-
-    /**
-     * create redis client connected to address of given redis instance
-     *
-     * @param string|null $target
-     * @return \React\Promise\PromiseInterface resolves with Client or rejects with \Exception
-     */
-    public function createClient($target = null)
-    {
-        $auth = $this->getAuthFromTarget($target);
-        $db   = $this->getDatabaseFromTarget($target);
-        $protocol = $this->protocol;
-
-        return $this->connect($target)->then(function (Stream $stream) use ($auth, $db, $protocol) {
-            $client = new Client($stream, $protocol->createParser(), $protocol->createSerializer());
-
-            return When::all(
-                array(
-                    ($auth !== null ? $client->auth($auth) : null),
-                    ($db   !== null ? $client->select($db) : null)
-                ),
-                function() use ($client) {
-                    return $client;
-                },
-                function($error) use ($client) {
-                    $client->close();
-                    throw $error;
-                }
-            );
-        });
     }
 
     public function createServer($address)
@@ -100,47 +67,5 @@ class Factory
         }
 
         return $parts;
-    }
-
-    private function connect($target)
-    {
-        try {
-            $parts = $this->parseUrl($target);
-        }
-        catch (Exception $e) {
-            return When::reject($e);
-        }
-
-        if ($this->connector === null) {
-            return When::reject(new BadMethodCallException('No Connector instance given in Factory constructor'));
-        }
-
-        return $this->connector->create($parts['host'], $parts['port']);
-    }
-
-    private function getAuthFromTarget($target)
-    {
-        $auth = null;
-        $parts = parse_url($target);
-        if (isset($parts['user'])) {
-            $auth = $parts['user'];
-        }
-        if (isset($parts['pass'])) {
-            $auth .= ':' . $parts['pass'];
-        }
-
-        return $auth;
-    }
-
-    private function getDatabaseFromTarget($target)
-    {
-        $db   = null;
-        $path = parse_url($target, PHP_URL_PATH);
-        if ($path !== null) {
-            // skip first slash
-            $db = substr($path, 1);
-        }
-
-        return $db;
     }
 }
