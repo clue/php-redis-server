@@ -154,6 +154,14 @@ class Business
         return $this->incrby($key, -$decrement);
     }
 
+    public function getset($key, $value)
+    {
+        $old = $this->storage->getStringOrNull($key);
+        $this->storage->setString($key, $value);
+
+        return $old;
+    }
+
     public function getrange($key, $start, $end)
     {
         $string = $this->storage->getStringOrNull($key);

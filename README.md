@@ -52,6 +52,7 @@ So far, the following list of commands shows what's already implemented:
   * DECRBY
   * GET
   * GETRANGE
+  * GETSET
   * INCR
   * INCRBY
   * MGET

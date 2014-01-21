@@ -186,4 +186,10 @@ class BusinessTest extends TestCase
         $this->assertEquals(12, $this->business->setrange('test', 5, ' world!'));
         $this->assertEquals("hello world!", $this->business->get('test'));
     }
+
+    public function testGetset()
+    {
+        $this->assertEquals(null, $this->business->getset('test', 'a'));
+        $this->assertEquals('a', $this->business->getset('test', 'b'));
+    }
 }
