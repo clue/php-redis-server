@@ -29,6 +29,14 @@ class Business
         return new StatusReply('PONG');
     }
 
+    public function append($key, $value)
+    {
+        $string =& $this->storage->getStringRef($key);
+        $string .= $value;
+
+        return strlen($string);
+    }
+
     public function get($key)
     {
         return $this->storage->getStringOrNull($key);

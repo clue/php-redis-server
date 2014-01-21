@@ -47,6 +47,7 @@ So far, the following list of commands shows what's already implemented:
   * TTL
   * TYPE
 * Strings
+  * APPEND
   * DECR
   * DECRBY
   * GET

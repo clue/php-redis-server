@@ -142,4 +142,23 @@ class BusinessTest extends TestCase
         $this->assertEquals(0, $this->business->exists('list'));
         $this->assertEquals(new StatusReply('none'), $this->business->type('list'));
     }
+
+    public function testAppend()
+    {
+        $this->assertEquals(5, $this->business->append('test', 'value'));
+        $this->assertEquals('value', $this->business->get('test'));
+
+        $this->assertEquals(8, $this->business->append('test', '123'));
+        $this->assertEquals('value123', $this->business->get('test'));
+    }
+
+    /**
+     * @expectedException UnexpectedValueException
+     */
+    public function testAppendListFails()
+    {
+        $this->assertEquals(1, $this->business->lpush('list', 'value'));
+
+        $this->business->append('list', 'invalid');
+    }
 }

@@ -90,6 +90,18 @@ class Storage
         return $value;
     }
 
+    public function& getStringRef($key)
+    {
+        if (!$this->hasKey($key)) {
+            $this->storage[$key] = '';
+            unset($this->timeout[$key]);
+        } else if (!is_string($this->storage[$key])) {
+            throw new InvalidDatatypeException();
+        }
+
+        return $this->storage[$key];
+    }
+
     public function getIntegerOrNull($key)
     {
         $value = $this->getStringOrNull($key);
