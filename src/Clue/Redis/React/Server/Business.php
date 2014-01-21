@@ -4,6 +4,7 @@ namespace Clue\Redis\React\Server;
 
 use Clue\Redis\React\Server\Storage;
 use Clue\Redis\Protocol\Model\StatusReply;
+use Clue\Redis\Protocol\Model\ErrorReply;
 use Exception;
 
 class Business
@@ -35,6 +36,62 @@ class Business
 
     public function set($key, $value)
     {
+        if (func_num_args() > 2) {
+            $args = func_get_args();
+            array_shift($args);
+            array_shift($args);
+
+            $px = null;
+            $ex = null;
+            $xx = false;
+            $nx = false;
+
+            for ($i = 0, $n = count($args); $i < $n; ++$i) {
+                $arg = strtoupper($args[$i]);
+
+                if ($arg === 'XX') {
+                    $xx = true;
+                } elseif ($arg === 'NX') {
+                    $nx = true;
+                } elseif ($arg === 'EX' || $arg === 'PX') {
+                    if (!isset($args[$i + 1])) {
+                        throw new ErrorReply('ERR syntax error');
+                    }
+                    $num = $args[++$i];
+                    if (!is_numeric($num)) {
+                        throw new ErrorReply('ERR value is not an integer or out of range');
+                    }
+                    if ($num <= 0) {
+                        throw new ErrorReply('ERR invalid expire time in SETEX');
+                    }
+
+                    if ($arg === 'EX') {
+                        $ex = $num;
+                    } else {
+                        $px = $num;
+                    }
+                } else {
+                    throw new ErrorReply('ERR syntax error');
+                }
+            }
+
+            if ($nx && $this->storage->hasKey($key)) {
+                return null;
+            }
+
+            if ($xx && !$this->storage->hasKey($key)) {
+                return null;
+            }
+
+            if ($ex !== null) {
+                $px += $ex * 1000;
+            }
+
+            if ($px !== null) {
+                return $this->psetex($key, $px, $value);
+            }
+        }
+
         $this->storage->setString($key, $value);
 
         return new StatusReply('OK');

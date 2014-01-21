@@ -35,6 +35,21 @@ class BusinessTest extends TestCase
         $this->assertEquals('value1', $this->business->get('test'));
     }
 
+    public function testStorageParams()
+    {
+        $this->assertNull($this->business->set('test', 'value', 'xx'));
+        $this->assertNull($this->business->get('test'));
+
+        $this->assertEquals(new StatusReply('OK'), $this->business->set('test', 'value', 'nx'));
+        $this->assertEquals('value', $this->business->get('test'));
+
+        $this->assertNull($this->business->set('test', 'newvalue', 'nx'));
+        $this->assertEquals('value', $this->business->get('test'));
+
+        $this->assertEquals(new StatusReply('OK'), $this->business->set('test', 'newvalue', 'xx'));
+        $this->assertEquals('newvalue', $this->business->get('test'));
+    }
+
     public function testIncrement()
     {
         $this->assertEquals(1, $this->business->incr('counter'));
