@@ -11,6 +11,7 @@ use Clue\Redis\Protocol\Model\ErrorReply;
 use Clue\Redis\Protocol\Model\ModelInterface;
 use Clue\Redis\Protocol\Model\MultiBulkReply;
 use Clue\Redis\Protocol\Parser\ParserException;
+use SplObjectStorage;
 use Exception;
 
 /**
@@ -26,6 +27,7 @@ class Server extends EventEmitter
     private $protocol;
     private $serializer;
     private $business;
+    private $clients;
 
     public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, Business $business = null)
     {
@@ -42,6 +44,7 @@ class Server extends EventEmitter
         $this->protocol = $protocol;
         $this->serializer = $protocol->createSerializer();
         $this->business = $business;
+        $this->clients = new SplObjectStorage();
 
         $socket->on('connection', array($this, 'handleConnection'));
     }
@@ -51,7 +54,10 @@ class Server extends EventEmitter
         $parser = $this->protocol->createParser();
         $that = $this;
 
-        $connection->on('data', function ($data) use ($parser, $that, $connection) {
+        $client = new Client($connection);
+        $this->clients->attach($client);
+
+        $connection->on('data', function ($data) use ($parser, $that, $client) {
             try {
                 $parser->pushIncoming($data);
             }
@@ -61,21 +67,32 @@ class Server extends EventEmitter
                 return;
             }
             while ($parser->hasIncomingModel()) {
-                $that->handleRequest($parser->popIncomingModel(), $connection);
+                $that->handleRequest($parser->popIncomingModel(), $client);
             }
         });
 
-        $this->emit('connection', array($connection, $this));
+        $connection->on('close', function() use ($that, $client) {
+            $that->handleDisconnection($client);
+        });
+
+        $this->emit('connection', array($client, $this));
     }
 
-    public function handleRequest(ModelInterface $request, Connection $connection)
+    public function handleDisconnection(Client $client)
     {
-        $this->emit('request', array($request, $connection));
+        $this->clients->detach($client);
+
+        $this->emit('disconnection', array($client, $this));
+    }
+
+    public function handleRequest(ModelInterface $request, Client $client)
+    {
+        $this->emit('request', array($client, $request));
 
         if (!($request instanceof MultiBulkReply) || !$request->isRequest()) {
             $model = new ErrorReply('ERR Malformed request. Bye!');
-            $connection->write($model->getMessageSerialized());
-            $connection->end();
+            $client->write($model);
+            $client->end();
             return;
         }
 
@@ -84,7 +101,7 @@ class Server extends EventEmitter
 
         if (!is_callable(array($this->business, $method))) {
             $model = new ErrorReply('ERR Unknown or disabled command \'' . $method . '\'');
-            $connection->write($model->getMessageSerialized());
+            $client->write($model);
             return;
         }
 
@@ -92,7 +109,7 @@ class Server extends EventEmitter
             $ret = call_user_func_array(array($this->business, $method), $args);
         }
         catch (Exception $e) {
-            $connection->write($this->serializer->createReplyModel($e)->getMessageSerialized());
+            $client->write($this->serializer->createReplyModel($e));
             return;
         }
 
@@ -100,7 +117,7 @@ class Server extends EventEmitter
             $ret = $this->serializer->createReplyModel($ret);
         }
 
-        $connection->write($ret->getMessageSerialized());
+        $client->write($ret);
     }
 
     public function close()
