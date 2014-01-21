@@ -1,6 +1,6 @@
 <?php
 
-use Clue\Redis\React\Server\Storage;
+use Clue\Redis\Server\Storage;
 
 class StorageTest extends TestCase
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Clue\Redis\React\Server;
+namespace Clue\Redis\Server;
 
 use UnexpectedValueException;
 

@@ -1,7 +1,7 @@
 <?php
 
-use Clue\Redis\React\Server\Business;
-use Clue\Redis\React\Server\Storage;
+use Clue\Redis\Server\Business;
+use Clue\Redis\Server\Storage;
 use Clue\Redis\Protocol\Model\StatusReply;
 
 class BusinessTest extends TestCase
@@ -64,7 +64,7 @@ class BusinessTest extends TestCase
 
     /**
      *
-     * @expectedException Clue\Redis\React\Server\InvalidDatatypeException
+     * @expectedException Clue\Redis\Server\InvalidDatatypeException
      */
     public function testIncrementInvalid()
     {

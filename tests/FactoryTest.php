@@ -1,10 +1,7 @@
 <?php
 
-use React\Socket\ConnectionInterface;
-
-use Clue\Redis\React\Server\Server;
-use Clue\Redis\React\Client\Client;
-use Clue\Redis\React\Factory;
+use Clue\Redis\Server\Server;
+use Clue\Redis\Server\Factory;
 
 class FactoryTest extends TestCase
 {

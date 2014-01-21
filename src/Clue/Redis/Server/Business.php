@@ -1,8 +1,8 @@
 <?php
 
-namespace Clue\Redis\React\Server;
+namespace Clue\Redis\Server;
 
-use Clue\Redis\React\Server\Storage;
+use Clue\Redis\Server\Storage;
 use Clue\Redis\Protocol\Model\StatusReply;
 use Clue\Redis\Protocol\Model\ErrorReply;
 use Exception;

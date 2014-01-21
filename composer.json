@@ -17,6 +17,6 @@
         "clue/redis-protocol": "dev-master as 0.2.0"
     },
     "autoload": {
-        "psr-0": { "Clue\\Redis\\React": "src" }
+        "psr-0": { "Clue\\Redis\\Server": "src" }
     }
 }

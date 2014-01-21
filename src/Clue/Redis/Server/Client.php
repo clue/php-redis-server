@@ -1,6 +1,6 @@
 <?php
 
-namespace Clue\Redis\React\Server;
+namespace Clue\Redis\Server;
 
 use React\Socket\Connection;
 use Clue\Redis\Protocol\Model\ModelInterface;
