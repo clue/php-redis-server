@@ -13,6 +13,9 @@ use Clue\Redis\Protocol\Model\MultiBulkReply;
 use Clue\Redis\Protocol\Parser\ParserException;
 use SplObjectStorage;
 use Exception;
+use Clue\Redis\React\Client\Request;
+use ReflectionMethod;
+use ReflectionException;
 
 /**
  * Dummy redis server implementation
@@ -25,11 +28,10 @@ class Server extends EventEmitter
     private $socket;
     private $loop;
     private $protocol;
-    private $serializer;
     private $business;
     private $clients;
 
-    public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, Business $business = null)
+    public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, $business = null)
     {
         if ($protocol === null) {
             $protocol = new ProtocolFactory();
@@ -39,10 +41,13 @@ class Server extends EventEmitter
             $business = new Business();
         }
 
+        if (!($business instanceof Invoker)) {
+            $business = new Invoker($business, $protocol->createSerializer());
+        }
+
         $this->socket = $socket;
         $this->loop = $loop;
         $this->protocol = $protocol;
-        $this->serializer = $protocol->createSerializer();
         $this->business = $business;
         $this->clients = new SplObjectStorage();
 
@@ -99,25 +104,10 @@ class Server extends EventEmitter
         $args = $request->getValueNative();
         $method = strtolower(array_shift($args));
 
-        if (!is_callable(array($this->business, $method))) {
-            $model = new ErrorReply('ERR Unknown or disabled command \'' . $method . '\'');
-            $client->write($model);
-            return;
+        $ret = $this->business->invoke($method, $args);
+        if ($ret !== null) {
+            $client->write($ret);
         }
-
-        try {
-            $ret = call_user_func_array(array($this->business, $method), $args);
-        }
-        catch (Exception $e) {
-            $client->write($this->serializer->createReplyModel($e));
-            return;
-        }
-
-        if (!($ret instanceof ModelInterface)) {
-            $ret = $this->serializer->createReplyModel($ret);
-        }
-
-        $client->write($ret);
     }
 
     public function close()
