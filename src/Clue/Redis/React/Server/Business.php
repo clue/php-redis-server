@@ -116,7 +116,7 @@ class Business
             }
         }
 
-        call_user_func_array(array($this, 'mset'), $args);
+        call_user_func_array(array($this, 'mset'), func_get_args());
 
         return 1;
     }

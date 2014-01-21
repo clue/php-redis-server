@@ -66,10 +66,18 @@ class BusinessTest extends TestCase
         $this->assertEquals(array('value1', null, 'value2'), $this->business->mget('a', 'b', 'c'));
     }
 
+    public function testMsetNx()
+    {
+        $this->assertEquals(1, $this->business->msetnx('a', 'b', 'c', 'd'));
+        $this->assertEquals(array('b', 'd'), $this->business->mget('a', 'c'));
+
+        $this->assertEquals(0, $this->business->msetnx('b', 'c', 'c', 'e'));
+    }
+
     /**
      * @expectedException Exception
      */
-    public function testMsetInvalid()
+    public function testMsetInvalidNumberOfArguments()
     {
         $this->business->mset('a', 'b', 'c');
     }
