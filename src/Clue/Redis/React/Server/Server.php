@@ -53,8 +53,8 @@ class Server extends EventEmitter
                 $connection->close();
                 return;
             }
-            while ($parser->hasIncoming()) {
-                $that->handleRequest($parser->popIncoming(), $connection);
+            while ($parser->hasIncomingModel()) {
+                $that->handleRequest($parser->popIncomingModel(), $connection);
             }
         });
 

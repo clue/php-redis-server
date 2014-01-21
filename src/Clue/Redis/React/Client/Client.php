@@ -45,8 +45,8 @@ class Client extends EventEmitter
                 return;
             }
 
-            while ($parser->hasIncoming()) {
-                $data = $parser->popIncoming();
+            while ($parser->hasIncomingModel()) {
+                $data = $parser->popIncomingModel();
 
                 try {
                     $that->handleReply($data);
