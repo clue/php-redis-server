@@ -76,7 +76,7 @@ class Storage
         $value = $this->getStringOrNull($key);
 
         if ($value !== null && !is_numeric($value)) {
-            throw new InvalidDatatypeException('ERR value is not an integer or out of range: ' . $value);
+            throw new InvalidDatatypeException('ERR value is not an integer or out of range');
         }
 
         return (int)$value;
