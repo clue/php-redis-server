@@ -29,6 +29,11 @@ class Storage
         }
     }
 
+    public function get($key)
+    {
+        return $this->storage[$key];
+    }
+
     public function getListOrNull($key)
     {
         if (!isset($this->storage[$key])) {
@@ -36,6 +41,17 @@ class Storage
         }
 
         if (!is_array($this->storage[$key])) {
+            throw new InvalidDatatypeException();
+        }
+
+        return $this->storage[$key];
+    }
+
+    public function& getListRef($key)
+    {
+        if (!isset($this->storage[$key])) {
+            $this->storage[$key] = array();
+        } elseif (!is_array($this->storage[$key])) {
             throw new InvalidDatatypeException();
         }
 

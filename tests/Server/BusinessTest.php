@@ -92,4 +92,31 @@ class BusinessTest extends TestCase
 
         $this->assertEquals(2, $this->business->del('a', 'b', 'c', 'd'));
     }
+
+    public function testList()
+    {
+        $this->assertEquals(0, $this->business->llen('list'));
+
+        $this->assertEquals(1, $this->business->rpush('list', 'b'));
+        $this->assertEquals(2, $this->business->rpush('list', 'c'));
+        $this->assertEquals(3, $this->business->lpush('list', 'a'));
+
+        $this->assertEquals(3, $this->business->llen('list'));
+        $this->assertEquals(new StatusReply('list'), $this->business->type('list'));
+
+        $this->assertEquals('c', $this->business->rpop('list'));
+        $this->assertEquals('a', $this->business->lpop('list'));
+        $this->assertEquals('b', $this->business->lpop('list'));
+
+        $this->assertNull($this->business->lpop('list'));
+
+        $this->assertEquals(0, $this->business->exists('list'));
+
+        $this->assertEquals(1, $this->business->rpush('list', 'a'));
+        $this->assertEquals('a', $this->business->rpop('list'));
+        $this->assertEquals(null, $this->business->rpop('list'));
+
+        $this->assertEquals(0, $this->business->exists('list'));
+        $this->assertEquals(new StatusReply('none'), $this->business->type('list'));
+    }
 }

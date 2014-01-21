@@ -181,7 +181,7 @@ class Business
 
     public function type($key)
     {
-        if (!$this->storage->hasKeys($key)) {
+        if (!$this->storage->hasKey($key)) {
             return new StatusReply('none');
         }
 
@@ -221,16 +221,36 @@ class Business
 
     public function lpop($key)
     {
+        if (!$this->storage->hasKey($key)) {
+            return null;
+        }
+
         $list =& $this->storage->getListRef($key);
 
-        return array_shift($list);
+        $value = array_shift($list);
+
+        if (!$list) {
+            $this->storage->unsetKey($key);
+        }
+
+        return $value;
     }
 
     public function rpop($key)
     {
+        if (!$this->storage->hasKey($key)) {
+            return null;
+        }
+
         $list =& $this->storage->getListRef($key);
 
-        return array_pop($list);
+        $value = array_pop($list);
+
+        if (!$list) {
+            $this->storage->unsetKey($key);
+        }
+
+        return $value;
     }
 
     public function llen($key)
