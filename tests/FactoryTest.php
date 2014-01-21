@@ -113,15 +113,12 @@ class FactoryTest extends TestCase
         // we expect a single single client
         $server->on('connection', $this->expectCallableOnce());
 
-        $once = $this->expectCallableOnce();
-        $server->on('connection', function(ConnectionInterface $connection) use ($once, $server) {
-            // we expect the client to close the connection once he receives an ERR messages.
-            $connection->on('close', $once);
+        // we expect the client to close the connection once he receives an ERR messages.
+        $server->on('disconnection', $this->expectCallableOnce());
 
-            // end the loop (stop ticking)
-            $connection->on('close', function() use ($server) {
-                $server->close();
-            });
+        // end the loop (stop ticking)
+        $server->on('disconnection', function() use ($server) {
+            $server->close();
         });
 
         // we expect the factory to fail because of the ERR message.
