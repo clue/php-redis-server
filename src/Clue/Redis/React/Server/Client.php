@@ -33,4 +33,15 @@ class Client
     {
         $this->connection->write($response->getMessageSerialized());
     }
+
+    public function getRequestDebug(ModelInterface $request)
+    {
+        $ret = sprintf('%.06f', microtime(true)) . ' [0 ' . $this->getRemoteAddress() . ']';
+
+        foreach($request->getValueNative() as $one) {
+            $ret .= ' "' . addslashes($one) . '"';
+        }
+
+        return $ret;
+    }
 }

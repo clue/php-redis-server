@@ -51,6 +51,10 @@ class Server extends EventEmitter
         $this->business = $business;
         $this->clients = new SplObjectStorage();
 
+        $this->on('error', function ($error, Client $client) {
+            $client->end();
+        });
+
         $socket->on('connection', array($this, 'handleConnection'));
     }
 
@@ -67,8 +71,7 @@ class Server extends EventEmitter
                 $parser->pushIncoming($data);
             }
             catch (ParserException $e) {
-                $connection->emit('error', array($e));
-                $connection->close();
+                $that->emit('error', array($e, $client));
                 return;
             }
             while ($parser->hasIncomingModel()) {
@@ -92,7 +95,7 @@ class Server extends EventEmitter
 
     public function handleRequest(ModelInterface $request, Client $client)
     {
-        $this->emit('request', array($client, $request));
+        $this->emit('request', array($request, $client));
 
         if (!($request instanceof MultiBulkReply) || !$request->isRequest()) {
             $model = new ErrorReply('ERR Malformed request. Bye!');
