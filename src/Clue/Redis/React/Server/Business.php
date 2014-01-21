@@ -40,6 +40,19 @@ class Business
         return new StatusReply('OK');
     }
 
+    public function setex($key, $value, $seconds)
+    {
+        return $this->psetex($key, $value, $seconds * 1000);
+    }
+
+    public function psetex($key, $value, $milliseconds)
+    {
+        $this->storage->setString($key, $value);
+        $this->storage->setTimeout($key, microtime(true) + ($milliseconds / 1000));
+
+        return new StatusReply('OK');
+    }
+
     public function setnx($key, $value)
     {
         if ($this->storage->hasKey($key)) {
@@ -74,6 +87,71 @@ class Business
     public function decrby($key, $decrement)
     {
         return $this->incrby($key, -$decrement);
+    }
+
+    public function persist($key)
+    {
+        if ($this->storage->hasKey($key)) {
+            $timeout = $this->storage->getTimeout($key);
+
+            if ($timeout !== null) {
+                $this->storage->setTimeout($key, null);
+                return 1;
+            }
+        }
+        return 0;
+    }
+
+    public function expire($key, $seconds)
+    {
+        return $this->pexpireat($key, 1000 * (microtime(true) + $seconds));
+    }
+
+    public function expireat($key, $timestamp)
+    {
+        return $this->pexpireat($key, 1000 * $timestamp);
+    }
+
+    public function pexpire($key, $milliseconds)
+    {
+        return $this->pexpireat($key, (1000 * microtime(true)) + $milliseconds);
+    }
+
+    public function pexpireat($key, $millisecondTimestamp)
+    {
+        if (!$this->storage->hasKey($key)) {
+            return 0;
+        }
+        $this->storage->setTimeout($key, $millisecondTimestamp / 1000);
+        return 1;
+    }
+
+    public function ttl($key)
+    {
+        $pttl = $this->pttl($key);
+        if ($pttl > 0) {
+            $pttl = (int)($pttl / 1000);
+        }
+        return $pttl;
+    }
+
+    public function pttl($key)
+    {
+        if (!$this->storage->hasKey($key)) {
+            return -2;
+        }
+
+        $timeout = $this->storage->getTimeout($key);
+        if ($timeout === null) {
+            return -1;
+        }
+
+        $milliseconds = 1000 * ($timeout - microtime(true));
+        if ($milliseconds < 0) {
+            $milliseconds = 0;
+        }
+
+        return (int)$milliseconds;
     }
 
     public function mget($key0)
