@@ -21,6 +21,12 @@ use Exception;
  */
 class Server extends EventEmitter
 {
+    private $socket;
+    private $loop;
+    private $protocol;
+    private $serializer;
+    private $business;
+
     public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, Business $business = null)
     {
         if ($protocol === null) {
