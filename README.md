@@ -1,6 +1,6 @@
-# clue/redis-react [![Build Status](https://travis-ci.org/clue/redis-react.png?branch=master)](https://travis-ci.org/clue/redis-react)
+# clue/redis-server [![Build Status](https://travis-ci.org/clue/redis-server.png?branch=master)](https://travis-ci.org/clue/redis-server)
 
-Async redis client implementation built on top of reactphp.
+A redis server implementation in pure PHP.
 
 > Note: This project is in early alpha stage! Feel free to report any issues you encounter.
 
@@ -12,20 +12,10 @@ local redis server and send some requests:
 ```php
 
 $factory = new Factory($loop, $connector);
-$factory->createClient()->then(function (Client $client) use ($loop) {
-    $client->SET('greeting', 'Hello world');
-    $client->APPEND('greeting', '!');
-    
-    $client->GET('greeting')->then(function ($greeting) {
-        echo $greeting . PHP_EOL;
+$factory->createServer()->then(function (Server $server) use ($loop) {
+    $server->on('connection', function(Client $client) {
+        echo $client->getRemoteAddr() .' connected' . PHP_EOL;    
     });
-    
-    $client->INCR('invocation')->then(function ($n) {
-        echo 'count: ' . $n . PHP_EOL;
-    });
-    
-    // end connection once all pending requests have been resolved
-    $client->end();
 });
 
 $loop->run();
@@ -38,7 +28,7 @@ The recommended way to install this library is [through composer](http://getcomp
 ```JSON
 {
     "require": {
-        "clue/redis-react": "dev-master"
+        "clue/redis-server": "dev-master"
     }
 }
 ```
