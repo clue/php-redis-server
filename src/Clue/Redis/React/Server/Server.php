@@ -10,6 +10,7 @@ use React\Socket\Connection;
 use Clue\Redis\Protocol\Model\ErrorReply;
 use Clue\Redis\Protocol\Model\ModelInterface;
 use Clue\Redis\Protocol\Model\MultiBulkReply;
+use Clue\Redis\Protocol\Parser\ParserException;
 use Exception;
 
 /**
@@ -49,7 +50,7 @@ class Server extends EventEmitter
                 $parser->pushIncoming($data);
             }
             catch (ParserException $e) {
-                $connection->emit('error', $e);
+                $connection->emit('error', array($e));
                 $connection->close();
                 return;
             }
