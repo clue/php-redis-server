@@ -154,6 +154,45 @@ class Business
         return $this->incrby($key, -$decrement);
     }
 
+    public function getrange($key, $start, $end)
+    {
+        $string = $this->storage->getStringOrNull($key);
+
+        if ($end > 0) {
+            $end = $end - $start + 1;
+        } elseif ($end < 0) {
+            if ($start < 0) {
+                $end = $end - $start + 1;
+            } else {
+                $end += 1;
+                if ($end === 0) {
+                    return $string;
+                }
+            }
+        }
+
+        return (string)substr($string, $start, $end);
+    }
+
+    public function setrange($key, $offset, $value)
+    {
+        $string =& $this->storage->getStringRef($key);
+        $slen = strlen($string);
+
+        $post = '';
+
+        if ($slen < $offset) {
+            $string .= str_repeat("\0", $offset - $slen);
+        } else {
+            $post = (string)substr($string, $offset + strlen($value));
+            $string = substr($string, 0, $offset);
+        }
+
+        $string .= $value . $post;
+
+        return strlen($string);
+    }
+
     public function persist($key)
     {
         if ($this->storage->hasKey($key)) {

@@ -51,6 +51,7 @@ So far, the following list of commands shows what's already implemented:
   * DECR
   * DECRBY
   * GET
+  * GETRANGE
   * INCR
   * INCRBY
   * MGET
@@ -60,6 +61,7 @@ So far, the following list of commands shows what's already implemented:
   * SET
   * SETEX
   * SETNX
+  * SETRANGE
   * STRLEN
 * Lists
   * LLEN

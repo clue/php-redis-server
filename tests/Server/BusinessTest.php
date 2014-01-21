@@ -161,4 +161,29 @@ class BusinessTest extends TestCase
 
         $this->business->append('list', 'invalid');
     }
+
+    public function testGetrange()
+    {
+        $this->assertEquals(new StatusReply('OK'), $this->business->set('test', 'This is a string'));
+
+        $this->assertEquals('This', $this->business->getrange('test', 0, 3));
+        $this->assertEquals('ing', $this->business->getrange('test', -3, -1));
+        $this->assertEquals('This is a string', $this->business->getrange('test', 0, -1));
+        $this->assertEquals('string', $this->business->getrange('test', 10, 100));
+        $this->assertEquals('', $this->business->getrange('test', 100, 200));
+
+        $this->assertEquals('', $this->business->getrange('unknown', 0, 3));
+    }
+
+    public function testSetrange()
+    {
+        $this->assertEquals(11, $this->business->setrange('test', 6, 'world'));
+        $this->assertEquals("\0\0\0\0\0\0world", $this->business->get('test'));
+
+        $this->assertEquals(11, $this->business->setrange('test', 0, 'hello'));
+        $this->assertEquals("hello\0world", $this->business->get('test'));
+
+        $this->assertEquals(12, $this->business->setrange('test', 5, ' world!'));
+        $this->assertEquals("hello world!", $this->business->get('test'));
+    }
 }
