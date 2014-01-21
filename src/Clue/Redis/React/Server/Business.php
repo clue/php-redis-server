@@ -40,12 +40,12 @@ class Business
         return new StatusReply('OK');
     }
 
-    public function setex($key, $value, $seconds)
+    public function setex($key, $seconds, $value)
     {
-        return $this->psetex($key, $value, $seconds * 1000);
+        return $this->psetex($key, $seconds * 1000, $value);
     }
 
-    public function psetex($key, $value, $milliseconds)
+    public function psetex($key, $milliseconds, $value)
     {
         $this->storage->setString($key, $value);
         $this->storage->setTimeout($key, microtime(true) + ($milliseconds / 1000));
