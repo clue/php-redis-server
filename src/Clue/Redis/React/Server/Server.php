@@ -8,6 +8,9 @@ use React\EventLoop\LoopInterface;
 use Clue\Redis\Protocol\Factory as ProtocolFactory;
 use React\Socket\Connection;
 use Clue\Redis\Protocol\Model\ErrorReply;
+use Clue\Redis\Protocol\Model\ModelInterface;
+use Clue\Redis\Protocol\Model\MultiBulkReply;
+use Exception;
 
 /**
  * Dummy redis server implementation
@@ -58,18 +61,20 @@ class Server extends EventEmitter
         $this->emit('connection', array($connection, $this));
     }
 
-    public function handleRequest($request, Connection $connection)
+    public function handleRequest(ModelInterface $request, Connection $connection)
     {
         $this->emit('request', array($request, $connection));
 
-        if (!is_array($request)) {
+        if (!($request instanceof MultiBulkReply) || !$request->isRequest()) {
             $model = new ErrorReply('ERR Malformed request. Bye!');
             $connection->write($model->getMessageSerialized());
             $connection->end();
             return;
         }
 
-        $method = strtolower(array_shift($request));
+        $args = $request->getValueNative();
+        $method = strtolower(array_shift($args));
+
         if (!is_callable(array($this->business, $method))) {
             $model = new ErrorReply('ERR Unknown or disabled command \'' . $method . '\'');
             $connection->write($model->getMessageSerialized());
@@ -77,14 +82,18 @@ class Server extends EventEmitter
         }
 
         try {
-            $ret = call_user_func_array(array($this->business, $method), $request);
+            $ret = call_user_func_array(array($this->business, $method), $args);
         }
         catch (Exception $e) {
             $connection->write($this->serializer->createReplyModel($e)->getMessageSerialized());
             return;
         }
 
-        $connection->write($this->serializer->createReply($ret));
+        if (!($ret instanceof ModelInterface)) {
+            $ret = $this->serializer->createReplyModel($ret);
+        }
+
+        $connection->write($ret->getMessageSerialized());
     }
 
     public function close()

@@ -3,7 +3,7 @@
 namespace Clue\Redis\React\Server;
 
 use Clue\Redis\React\Server\Storage;
-use Clue\Redis\Protocol\Model\Status;
+use Clue\Redis\Protocol\Model\StatusReply;
 use Exception;
 
 class Business
@@ -25,7 +25,7 @@ class Business
 
     public function ping()
     {
-        return new Status('PONG');
+        return new StatusReply('PONG');
     }
 
     public function get($key)
@@ -37,7 +37,7 @@ class Business
     {
         $this->storage->setString($key, $value);
 
-        return new Status('OK');
+        return new StatusReply('OK');
     }
 
     public function setnx($key, $value)
@@ -58,9 +58,10 @@ class Business
 
     public function incrby($key, $increment)
     {
-        $value =& $this->storage->getIntegerRef($key);
-
+        $value = $this->storage->getIntegerOrNull($key);
         $value += $increment;
+
+        $this->storage->setString($key, $value);
 
         return $value;
     }
@@ -104,7 +105,7 @@ class Business
             $this->storage->setString($args[$i], $args[$i + 1]);
         }
 
-        return new Status('OK');
+        return new StatusReply('OK');
     }
 
     public function msetnx($key0, $value0)
@@ -156,11 +157,9 @@ class Business
             $this->del($newkey);
         }
 
-        $value = $this->storage->get($key);
-        $this->storage->unsetKey($key);
-        $this->storage->set($newkey, $value);
+        $this->storage->rename($key, $newkey);
 
-        return new Status('OK');
+        return new StatusReply('OK');
     }
 
     public function renamenx($key, $newkey)
@@ -175,9 +174,7 @@ class Business
             return 0;
         }
 
-        $value = $this->storage->get($key);
-        $this->storage->unsetKey($key);
-        $this->storage->set($newkey, $value);
+        $this->storage->rename($key, $newkey);
 
         return 1;
     }
@@ -185,14 +182,14 @@ class Business
     public function type($key)
     {
         if (!$this->storage->hasKeys($key)) {
-            return new Status('none');
+            return new StatusReply('none');
         }
 
         $value = $this->storage->get($key);
         if (is_string($value)) {
-            return new Status('string');
+            return new StatusReply('string');
         } elseif (is_array($value)) {
-            return new Status('list');
+            return new StatusReply('list');
         } else {
             throw new UnexpectedValueException('Unknown datatype encountered');
         }
