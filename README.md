@@ -17,13 +17,13 @@ installed? Simply put, you wouldn't. Ever.
 
 ### Project goals
 
-* [x] Implement an in-memory datastore using the redis protocol
-* [x] Compatiblity with common redis clients
-  * [x] redis-cli
-  * [x] redis-benchmark* (only a subset of its commands)
-* [x] SOLID and modern design, tested and modular components
-* [ ] Implement *all* commands (see below for list of supported commands)
-* [ ] Compatibility with common tools resque(-php) etc.
+* ✓ Implement an in-memory datastore using the redis protocol
+* ✓ Compatiblity with common redis clients
+  * ✓ redis-cli
+  * ✓ redis-benchmark* (only a subset of its commands)
+* ✓ SOLID and modern design, tested and modular components
+* ✗ Implement *all* commands (see below for list of supported commands)
+* ✗ Compatibility with common tools resque(-php) etc.
 
 ### Supported commands
 
