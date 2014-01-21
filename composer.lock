@@ -3,20 +3,20 @@
         "This file locks the dependencies of your project to a known state",
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
     ],
-    "hash": "adeefae345f730ac7202d2f5b9666ee8",
+    "hash": "b668b00e7d6a37b7409f27d6cd8d1cd1",
     "packages": [
         {
             "name": "clue/redis-protocol",
-            "version": "dev-master",
+            "version": "v0.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/clue/redis-protocol.git",
-                "reference": "34b8ca00c2bdcd065fbfbaf60e921b77f8a223e2"
+                "reference": "eff088be0ee96f877866f975bcf3356ae6f03625"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/clue/redis-protocol/zipball/34b8ca00c2bdcd065fbfbaf60e921b77f8a223e2",
-                "reference": "34b8ca00c2bdcd065fbfbaf60e921b77f8a223e2",
+                "url": "https://api.github.com/repos/clue/redis-protocol/zipball/eff088be0ee96f877866f975bcf3356ae6f03625",
+                "reference": "eff088be0ee96f877866f975bcf3356ae6f03625",
                 "shasum": ""
             },
             "require": {
@@ -47,7 +47,7 @@
                 "serializer",
                 "streaming"
             ],
-            "time": "2014-01-21 09:50:19"
+            "time": "2014-01-21 21:28:04"
         },
         {
             "name": "evenement/evenement",
@@ -392,17 +392,12 @@
 
     ],
     "aliases": [
-        {
-            "alias": "0.2.0",
-            "alias_normalized": "0.2.0.0",
-            "version": "9999999-dev",
-            "package": "clue/redis-protocol"
-        }
+
     ],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "clue/redis-protocol": 20
-    },
+    "stability-flags": [
+
+    ],
     "platform": [
 
     ],
