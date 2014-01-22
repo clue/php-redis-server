@@ -20,6 +20,21 @@ class BusinessTest extends TestCase
         $this->assertEquals(new StatusReply('PONG'), $this->business->ping());
     }
 
+    public function testKeys()
+    {
+        $this->assertEquals(array(), $this->business->keys('*'));
+
+        $this->assertEquals(new StatusReply('OK'), $this->business->mset('one', '1', 'two', '2', 'three', '3'));
+
+        $this->assertEquals(array('one', 'two', 'three'), $this->business->keys('*'));
+        $this->assertEquals(array('one', 'three'), $this->business->keys('*e'));
+        $this->assertEquals(array('one', 'two'), $this->business->keys('*o*'));
+        $this->assertEquals(array('one'), $this->business->keys('[eio]*'));
+        $this->assertEquals(array(), $this->business->keys('T*'));
+
+        $this->assertEquals(array(), $this->business->keys('[*{?\\'));
+    }
+
     public function testStorage()
     {
         $this->assertEquals(0, $this->business->exists('test'));

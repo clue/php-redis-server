@@ -44,6 +44,20 @@ class StorageTest extends TestCase
         $this->assertSame($list, $this->storage->getOrCreateList('list'));
     }
 
+    public function testKeys()
+    {
+        $this->assertEquals(array(), $this->storage->getAllKeys());
+
+        $this->storage->setString('a', '1');
+        $this->storage->setString('b', '2');
+
+        $this->assertEquals(array('a', 'b'), $this->storage->getAllKeys());
+
+        $this->storage->setTimeout('b', 0);
+
+        $this->assertEquals(array('a'), $this->storage->getAllKeys());
+    }
+
     /**
      * @expectedException Clue\Redis\Server\InvalidDatatypeException
      */

@@ -38,6 +38,7 @@ So far, the following list of commands shows what's already implemented:
   * EXISTS
   * EXPIRE
   * EXPIREAT
+  * KEYS
   * PERSIST
   * PEXPIRE
   * PEXPIREAT

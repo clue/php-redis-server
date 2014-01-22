@@ -37,6 +37,19 @@ class Business
         return strlen($string);
     }
 
+    public function keys($pattern)
+    {
+        $ret = array();
+
+        foreach ($this->storage->getAllKeys() as $key) {
+            if(fnmatch($pattern, $key)) {
+                $ret []= $key;
+            }
+        }
+
+        return $ret;
+    }
+
     public function get($key)
     {
         return $this->storage->getStringOrNull($key);

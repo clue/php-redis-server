@@ -19,6 +19,20 @@ class Storage
         return isset($this->storage[$key]) && (!isset($this->timeout[$key]) || $this->timeout[$key] > microtime(true));
     }
 
+    public function getAllKeys()
+    {
+        if ($this->timeout) {
+            $now = microtime(true);
+
+            foreach ($this->timeout as $key => $ts) {
+                if ($ts < $now) {
+                    unset($this->storage[$key], $this->timeout[$key]);
+                }
+            }
+        }
+        return array_keys($this->storage);
+    }
+
     public function setString($key, $value)
     {
         $this->storage[$key] = (string)$value;
