@@ -30,6 +30,10 @@ class Storage
     {
         $this->removeAllExpired();
 
+        if (!$this->storage) {
+            return null;
+        }
+
         return array_rand($this->storage);
     }
 
