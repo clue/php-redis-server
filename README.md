@@ -1,6 +1,6 @@
 # clue/redis-server [![Build Status](https://travis-ci.org/clue/redis-server.png?branch=master)](https://travis-ci.org/clue/redis-server)
 
-A redis server implementation in pure PHP.
+A redis server implementation in pure PHP. *Not for the faint-hearted.*
 
 > Note: This project is in early alpha stage! Feel free to report any issues you encounter.
 
