@@ -392,7 +392,7 @@ class Business
         $values = func_get_args();
         array_shift($values);
 
-        $list = array_merge($values, $list);
+        $list = array_merge(array_reverse($values), $list);
 
         return count($list);
     }

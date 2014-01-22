@@ -143,6 +143,15 @@ class BusinessTest extends TestCase
         $this->assertEquals(new StatusReply('none'), $this->business->type('list'));
     }
 
+    public function testLpushOrder()
+    {
+        $this->assertEquals(3, $this->business->lpush('list', 'a', 'b', 'c'));
+        $this->assertEquals('c', $this->business->lpop('list'));
+        $this->assertEquals('b', $this->business->lpop('list'));
+        $this->assertEquals('a', $this->business->lpop('list'));
+        $this->assertNull($this->business->lpop('list'));
+    }
+
     public function testAppend()
     {
         $this->assertEquals(5, $this->business->append('test', 'value'));
