@@ -65,6 +65,7 @@ So far, the following list of commands shows what's already implemented:
   * SETRANGE
   * STRLEN
 * Lists
+  * LINDEX
   * LLEN
   * LPOP
   * LPUSH

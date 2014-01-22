@@ -455,4 +455,23 @@ class Business
 
         return $this->storage->getOrCreateList($key)->count();
     }
+
+    public function lindex($key, $index)
+    {
+        $len = $this->llen($key);
+        if ($len === 0) {
+            return null;
+        }
+
+        $list = $this->storage->getOrCreateList($key);
+
+        if ($index < 0) {
+            $index += $len;
+        }
+        if ($index < 0 || $index >= $len) {
+            return null;
+        }
+
+        return $list->offsetGet($index);
+    }
 }
