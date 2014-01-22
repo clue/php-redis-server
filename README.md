@@ -96,6 +96,30 @@ commands, so you should usually limit them like this:
 $ redis-benchmark -p 1337 -t get,set
 ```
 
+Some benchmarking results:
+
+```
+# official redis-server
+$ redis-benchmark -t set,get -q
+SET: 121951.22 requests per second
+GET: 151515.16 requests per second
+
+# clue/redis-server PHP 5.5
+$ redis-benchmark -t set,get -p 1337 -q
+SET: 18761.73 requests per second
+GET: 22172.95 requests per second
+
+# clue/redis-server HHVM
+$ redis-benchmark -t set,get -p 1337 -q
+SET: 49019.61 requests per second
+GET: 57142.86 requests per second
+```
+
+So depending on your configuration, expect the original implementation to be 2x to 5x as fast.
+- HHVM is significantly faster than standard PHP (2.5x)
+- Installing `ext-libevent` will significantly improve the performance for concurrent connections. This is not a hard requirement, but `redis-benchmark` defaults to 50 concurrent connections which slows down the whole server process due to relying on a `stream_select()` call otherwise.
+- Disabling debugging output by commenting out the `echo`s in the examples significantly improves performance (3x)
+
 ## Quickstart example
 
 Once [installed](#install), you can run any of the examples provided:
