@@ -408,6 +408,15 @@ class Business
         return $list->count();
     }
 
+    public function lpushx($key, $value)
+    {
+        if (!$this->storage->hasKey($key)) {
+            return 0;
+        }
+
+        return $this->lpush($key, $value);
+    }
+
     public function rpush($key, $value0)
     {
         $list = $this->storage->getOrCreateList($key);
@@ -420,6 +429,15 @@ class Business
         }
 
         return $list->count();
+    }
+
+    public function rpushx($key, $value)
+    {
+        if (!$this->storage->hasKey($key)) {
+            return 0;
+        }
+
+        return $this->rpush($key, $value);
     }
 
     public function lpop($key)

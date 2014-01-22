@@ -69,8 +69,10 @@ So far, the following list of commands shows what's already implemented:
   * LLEN
   * LPOP
   * LPUSH
+  * LPUSHX
   * RPOP
   * RPUSH
+  * RPUSHX
 * Connection
   * ECHO
   * PING
