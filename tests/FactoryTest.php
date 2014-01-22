@@ -15,14 +15,16 @@ class FactoryTest extends TestCase
     {
         $server = null;
 
-        $address = '127.0.0.1:1337';
+        // bind to a random port on the local interface
+        $address = '127.0.0.1:0';
 
         // start a server that only sends ERR messages.
-        $this->factory->createServer('tcp://' . $address)->then(function (Server $s) use (&$server) {
+        $this->factory->createServer($address)->then(function (Server $s) use (&$server) {
             $server = $s;
         });
 
         $this->assertNotNull($server, 'Server instance must be set by now');
+        $this->assertNotNull($server->getLocalAddress());
 
         // we expect a single single client
         $server->on('connection', $this->expectCallableOnce());
@@ -36,7 +38,7 @@ class FactoryTest extends TestCase
         });
 
         // we expect the factory to fail because of the ERR message.
-        $stream = stream_socket_client($address);
+        $stream = stream_socket_client($server->getLocalAddress());
         fwrite($stream, "invalid\r\n");
         fclose($stream);
 

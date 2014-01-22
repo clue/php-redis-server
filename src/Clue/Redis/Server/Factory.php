@@ -53,12 +53,20 @@ class Factory
             $target = 'tcp://' . $target;
         }
 
-        $parts = parse_url($target);
-        if ($parts === false || !isset($parts['host']) || $parts['scheme'] !== 'tcp') {
-            throw new Exception('Given URL can not be parsed');
+        $nullport = false;
+        if (substr($target, -2) === ':0') {
+            $target = substr($target, 0, -2);
+            $nullport = true;
         }
 
-        if (!isset($parts['port'])) {
+        $parts = parse_url($target);
+        if ($parts === false || !isset($parts['host']) || $parts['scheme'] !== 'tcp') {
+            throw new Exception('Given target URL "' . $target . '" can not be parsed');
+        }
+
+        if ($nullport) {
+            $parts['port'] = 0;
+        } elseif (!isset($parts['port'])) {
             $parts['port'] = '6379';
         }
 
