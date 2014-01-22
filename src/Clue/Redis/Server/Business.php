@@ -65,10 +65,7 @@ class Business
                     if (!isset($args[$i + 1])) {
                         throw new ErrorReply('ERR syntax error');
                     }
-                    $num = $args[++$i];
-                    if (!is_numeric($num)) {
-                        throw new ErrorReply('ERR value is not an integer or out of range');
-                    }
+                    $num = $this->coerceInteger($args[++$i]);
                     if ($num <= 0) {
                         throw new ErrorReply('ERR invalid expire time in SETEX');
                     }
@@ -107,11 +104,13 @@ class Business
 
     public function setex($key, $seconds, $value)
     {
-        return $this->psetex($key, $seconds * 1000, $value);
+        return $this->psetex($key, $this->coerceInteger($seconds) * 1000, $value);
     }
 
     public function psetex($key, $milliseconds, $value)
     {
+        $milliseconds = $this->coerceInteger($milliseconds);
+
         $this->storage->setString($key, $value);
         $this->storage->setTimeout($key, microtime(true) + ($milliseconds / 1000));
 
@@ -136,6 +135,8 @@ class Business
 
     public function incrby($key, $increment)
     {
+        $increment = $this->coerceInteger($increment);
+
         $value = $this->storage->getIntegerOrNull($key);
         $value += $increment;
 
@@ -151,7 +152,7 @@ class Business
 
     public function decrby($key, $decrement)
     {
-        return $this->incrby($key, -$decrement);
+        return $this->incrby($key, -$this->coerceInteger($decrement));
     }
 
     public function getset($key, $value)
@@ -164,6 +165,9 @@ class Business
 
     public function getrange($key, $start, $end)
     {
+        $start = $this->coerceInteger($start);
+        $end   = $this->coerceInteger($end);
+
         $string = $this->storage->getStringOrNull($key);
 
         if ($end > 0) {
@@ -184,6 +188,8 @@ class Business
 
     public function setrange($key, $offset, $value)
     {
+        $offset = $this->coerceInteger($offset);
+
         $string =& $this->storage->getStringRef($key);
         $slen = strlen($string);
 
@@ -216,25 +222,28 @@ class Business
 
     public function expire($key, $seconds)
     {
-        return $this->pexpireat($key, 1000 * (microtime(true) + $seconds));
+        return $this->pexpireat($key, 1000 * (microtime(true) + $this->coerceInteger($seconds)));
     }
 
     public function expireat($key, $timestamp)
     {
-        return $this->pexpireat($key, 1000 * $timestamp);
+        return $this->pexpireat($key, 1000 * $this->coerceInteger($timestamp));
     }
 
     public function pexpire($key, $milliseconds)
     {
-        return $this->pexpireat($key, (1000 * microtime(true)) + $milliseconds);
+        return $this->pexpireat($key, (1000 * microtime(true)) + $this->coerceInteger($milliseconds));
     }
 
     public function pexpireat($key, $millisecondTimestamp)
     {
+        $millisecondTimestamp = $this->coerceInteger($millisecondTimestamp);
+
         if (!$this->storage->hasKey($key)) {
             return 0;
         }
         $this->storage->setTimeout($key, $millisecondTimestamp / 1000);
+
         return 1;
     }
 
@@ -465,6 +474,9 @@ class Business
 
         $list = $this->storage->getOrCreateList($key);
 
+        // LINDEX actually checks the integer *after* checking the list and type
+        $index = $this->coerceInteger($index);
+
         if ($index < 0) {
             $index += $len;
         }
@@ -473,5 +485,14 @@ class Business
         }
 
         return $list->offsetGet($index);
+    }
+
+    private function coerceInteger($value)
+    {
+        $int = (int)$value;
+        if ((string)$int !== (string)$value) {
+            throw new Exception('ERR value is not an integer or out of range');
+        }
+        return $int;
     }
 }

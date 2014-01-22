@@ -216,4 +216,32 @@ class BusinessTest extends TestCase
         $this->assertEquals(null, $this->business->getset('test', 'a'));
         $this->assertEquals('a', $this->business->getset('test', 'b'));
     }
+
+    /**
+     * @expectedException Exception
+     * @expectedExceptionMessage ERR value is not an integer or out of range
+     * @dataProvider provideInvalidIntegerArgument
+     */
+    public function testInvalidIntegerArgument($method, $arg0)
+    {
+        $args = func_get_args();
+        unset($args[0]);
+
+        call_user_func_array(array($this->business, $method), $args);
+    }
+
+    public function provideInvalidIntegerArgument()
+    {
+        return array(
+            array('incrby', 'key', 'invalid'),
+            array('decrby', 'key', 'invalid'),
+            array('set', 'key', 'value', 'EX', 'invalid'),
+            array('setex', 'key', 'invalid', 'value'),
+            array('psetex', 'key', 'invalid', 'value'),
+            array('expire', 'key', 'invalid'),
+            array('expireat', 'key', 'invalid'),
+            array('pexpire', 'key', 'invalid'),
+            array('pexpireat', 'key', 'invalid'),
+        );
+    }
 }
