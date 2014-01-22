@@ -117,4 +117,9 @@ class Server extends EventEmitter
     {
         $this->socket->shutdown();
     }
+
+    public function getLocalAddress()
+    {
+        return stream_socket_get_name($this->socket->master, false);
+    }
 }
