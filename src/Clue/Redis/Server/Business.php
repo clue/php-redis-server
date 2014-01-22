@@ -378,7 +378,7 @@ class Business
         $value = $this->storage->get($key);
         if (is_string($value)) {
             return new StatusReply('string');
-        } elseif (is_array($value)) {
+        } elseif ($value instanceof \SplDoublyLinkedList) {
             return new StatusReply('list');
         } else {
             throw new UnexpectedValueException('Unknown datatype encountered');
@@ -387,28 +387,30 @@ class Business
 
     public function lpush($key, $value0)
     {
-        $list =& $this->storage->getListRef($key);
+        $list = $this->storage->getOrCreateList($key);
 
         $values = func_get_args();
-        // remove key parameter
         unset($values[0]);
-        // add reference to list as last parameter
-        $values []=& $list;
-        // reverse everything for array_unshift (list reference is now first)
-        $values = array_reverse($values);
 
-        return call_user_func_array('array_unshift', $values);
+        foreach ($values as $value) {
+            $list->unshift($value);
+        }
+
+        return $list->count();
     }
 
     public function rpush($key, $value0)
     {
-        $list =& $this->storage->getListRef($key);
+        $list = $this->storage->getOrCreateList($key);
 
         $values = func_get_args();
-        // replace key parameter with reference to list for array_push
-        $values[0] =& $list;
+        unset($values[0]);
 
-        return call_user_func_array('array_push', $values);
+        foreach ($values as $value) {
+            $list->push($value);
+        }
+
+        return $list->count();
     }
 
     public function lpop($key)
@@ -417,11 +419,11 @@ class Business
             return null;
         }
 
-        $list =& $this->storage->getListRef($key);
+        $list = $this->storage->getOrCreateList($key);
 
-        $value = array_shift($list);
+        $value = $list->shift();
 
-        if (!$list) {
+        if ($list->isEmpty()) {
             $this->storage->unsetKey($key);
         }
 
@@ -434,11 +436,11 @@ class Business
             return null;
         }
 
-        $list =& $this->storage->getListRef($key);
+        $list = $this->storage->getOrCreateList($key);
 
-        $value = array_pop($list);
+        $value = $list->pop();
 
-        if (!$list) {
+        if ($list->isEmpty()) {
             $this->storage->unsetKey($key);
         }
 
@@ -447,6 +449,10 @@ class Business
 
     public function llen($key)
     {
-        return count($this->storage->getListOrNull($key));
+        if (!$this->storage->hasKey($key)) {
+            return 0;
+        }
+
+        return $this->storage->getOrCreateList($key)->count();
     }
 }

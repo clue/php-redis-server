@@ -2,6 +2,8 @@
 
 namespace Clue\Redis\Server;
 
+use SplDoublyLinkedList;
+
 class Storage
 {
     private $storage = array();
@@ -48,31 +50,17 @@ class Storage
         return $this->storage[$key];
     }
 
-    public function getListOrNull($key)
+    public function getOrCreateList($key)
     {
-        $value = $this->get($key);
-
-        if ($value === null) {
-            return null;
+        if ($this->hasKey($key)) {
+            if (!($this->storage[$key] instanceof SplDoublyLinkedList)) {
+                throw new InvalidDatatypeException();
+            }
+            return $this->storage[$key];
         }
 
-        if (!is_array($value)) {
-            throw new InvalidDatatypeException();
-        }
-
-        return $value;
-    }
-
-    public function& getListRef($key)
-    {
-        if (!$this->hasKey($key)) {
-            $this->storage[$key] = array();
-            unset($this->timeout[$key]);
-        } elseif (!is_array($this->storage[$key])) {
-            throw new InvalidDatatypeException();
-        }
-
-        return $this->storage[$key];
+        unset($this->timeout[$key]);
+        return $this->storage[$key] = new SplDoublyLinkedList();
     }
 
     public function getStringOrNull($key)
