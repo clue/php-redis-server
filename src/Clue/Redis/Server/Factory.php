@@ -46,13 +46,11 @@ class Factory
 
     private function parseUrl($target)
     {
-        if ($target === null) {
-            $target = 'tcp://127.0.0.1';
-        }
         if (strpos($target, '://') === false) {
             $target = 'tcp://' . $target;
         }
 
+        // parse_url() does not accept null ports (random port assignment) => manually remove
         $nullport = false;
         if (substr($target, -2) === ':0') {
             $target = substr($target, 0, -2);
