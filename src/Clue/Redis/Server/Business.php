@@ -474,6 +474,24 @@ class Business
         return $value;
     }
 
+    public function rpoplpush($source, $destination)
+    {
+        if (!$this->storage->hasKey($source)) {
+            return null;
+        }
+        $sourceList      = $this->storage->getOrCreateList($source);
+        $destinationList = $this->storage->getOrCreateList($destination);
+
+        $value = $sourceList->pop();
+        $destinationList->unshift($value);
+
+        if ($sourceList->isEmpty()) {
+            $this->storage->unsetKey($source);
+        }
+
+        return $value;
+    }
+
     public function llen($key)
     {
         if (!$this->storage->hasKey($key)) {

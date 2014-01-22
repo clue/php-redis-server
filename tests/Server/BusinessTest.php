@@ -168,6 +168,22 @@ class BusinessTest extends TestCase
         $this->assertEquals('e', $this->business->lpop('list'));
     }
 
+    public function testRpopLpush()
+    {
+        $this->assertNull($this->business->rpoplpush('a', 'b'));
+        $this->assertEquals(0, $this->business->exists('b'));
+
+        $this->assertEquals(3, $this->business->rpush('a', '1', '2', '3'));
+
+        $this->assertEquals('3', $this->business->rpoplpush('a', 'b'));
+        $this->assertEquals(1, $this->business->exists('b'));
+
+        $this->assertEquals('2', $this->business->rpoplpush('a', 'b'));
+        $this->assertEquals('1', $this->business->rpoplpush('a', 'b'));
+
+        $this->assertEquals(0, $this->business->exists('a'));
+    }
+
     public function testLindex()
     {
         $this->assertNull($this->business->lindex('list', 1));

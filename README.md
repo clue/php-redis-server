@@ -71,6 +71,7 @@ So far, the following list of commands shows what's already implemented:
   * LPUSH
   * LPUSHX
   * RPOP
+  * RPOPLPUSH
   * RPUSH
   * RPUSHX
 * Connection
