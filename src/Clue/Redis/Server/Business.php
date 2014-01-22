@@ -50,6 +50,11 @@ class Business
         return $ret;
     }
 
+    public function randomkey()
+    {
+        return $this->storage->getRandomKey();
+    }
+
     public function get($key)
     {
         return $this->storage->getStringOrNull($key);

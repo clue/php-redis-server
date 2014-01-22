@@ -23,6 +23,7 @@ class BusinessTest extends TestCase
     public function testKeys()
     {
         $this->assertEquals(array(), $this->business->keys('*'));
+        $this->assertNull($this->business->randomkey());
 
         $this->assertEquals(new StatusReply('OK'), $this->business->mset('one', '1', 'two', '2', 'three', '3'));
 
@@ -33,6 +34,18 @@ class BusinessTest extends TestCase
         $this->assertEquals(array(), $this->business->keys('T*'));
 
         $this->assertEquals(array(), $this->business->keys('[*{?\\'));
+    }
+
+    public function testRandomkey()
+    {
+        $this->assertNull($this->business->randomkey());
+
+        $this->assertEquals(new StatusReply('OK'), $this->business->set('key', 'value'));
+
+        // add a key that expires immediately, effectively leaving only a single 'key' for random selection
+        $this->assertEquals(new StatusReply('OK'), $this->business->setex('expired', '0', 'value'));
+
+        $this->assertEquals('key', $this->business->randomkey());
     }
 
     public function testStorage()

@@ -21,16 +21,16 @@ class Storage
 
     public function getAllKeys()
     {
-        if ($this->timeout) {
-            $now = microtime(true);
+        $this->removeAllExpired();
 
-            foreach ($this->timeout as $key => $ts) {
-                if ($ts < $now) {
-                    unset($this->storage[$key], $this->timeout[$key]);
-                }
-            }
-        }
         return array_keys($this->storage);
+    }
+
+    public function getRandomKey()
+    {
+        $this->removeAllExpired();
+
+        return array_rand($this->storage);
     }
 
     public function setString($key, $value)
@@ -126,6 +126,19 @@ class Storage
             unset($this->timeout[$key]);
         } else {
             $this->timeout[$key] = $timestamp;
+        }
+    }
+
+    private function removeAllExpired()
+    {
+        if ($this->timeout) {
+            $now = microtime(true);
+
+            foreach ($this->timeout as $key => $ts) {
+                if ($ts < $now) {
+                    unset($this->storage[$key], $this->timeout[$key]);
+                }
+            }
         }
     }
 }

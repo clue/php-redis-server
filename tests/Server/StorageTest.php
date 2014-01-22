@@ -47,6 +47,7 @@ class StorageTest extends TestCase
     public function testKeys()
     {
         $this->assertEquals(array(), $this->storage->getAllKeys());
+        $this->assertNull($this->storage->getRandomKey());
 
         $this->storage->setString('a', '1');
         $this->storage->setString('b', '2');
@@ -56,6 +57,7 @@ class StorageTest extends TestCase
         $this->storage->setTimeout('b', 0);
 
         $this->assertEquals(array('a'), $this->storage->getAllKeys());
+        $this->assertEquals('a', $this->storage->getRandomKey());
     }
 
     /**

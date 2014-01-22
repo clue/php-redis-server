@@ -43,6 +43,7 @@ So far, the following list of commands shows what's already implemented:
   * PEXPIRE
   * PEXPIREAT
   * PTTL
+  * RANDOMKEY
   * RENAME
   * RENAMENX
   * TTL
