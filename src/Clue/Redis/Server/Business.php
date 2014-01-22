@@ -390,11 +390,14 @@ class Business
         $list =& $this->storage->getListRef($key);
 
         $values = func_get_args();
-        array_shift($values);
+        // remove key parameter
+        unset($values[0]);
+        // add reference to list as last parameter
+        $values []=& $list;
+        // reverse everything for array_unshift (list reference is now first)
+        $values = array_reverse($values);
 
-        $list = array_merge(array_reverse($values), $list);
-
-        return count($list);
+        return call_user_func_array('array_unshift', $values);
     }
 
     public function rpush($key, $value0)
@@ -402,11 +405,10 @@ class Business
         $list =& $this->storage->getListRef($key);
 
         $values = func_get_args();
-        array_shift($values);
+        // replace key parameter with reference to list for array_push
+        $values[0] =& $list;
 
-        $list = array_merge($list, $values);
-
-        return count($list);
+        return call_user_func_array('array_push', $values);
     }
 
     public function lpop($key)
