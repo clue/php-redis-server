@@ -98,13 +98,19 @@ $ redis-benchmark -p 1337 -t get,set
 
 ## Quickstart example
 
-Once [installed](#install), you can use the following code to connect to your
-local redis server and send some requests:
+Once [installed](#install), you can run any of the examples provided:
+
+```bash
+php example/server.php
+```
+
+Alternatively, you can also use this project as a lib in order to build your
+own server like this:
 
 ```php
 
 $factory = new Factory($loop, $connector);
-$factory->createServer()->then(function (Server $server) use ($loop) {
+$factory->createServer('localhost:1337')->then(function (Server $server) use ($loop) {
     $server->on('connection', function(Client $client) {
         echo $client->getRemoteAddr() .' connected' . PHP_EOL;    
     });
@@ -115,14 +121,15 @@ $loop->run();
 
 ## Install
 
-The recommended way to install this library is [through composer](http://getcomposer.org). [New to composer?](http://getcomposer.org/doc/00-intro.md)
+The recommended way to install this library cloning this repo and installing
+its dependencies [through composer](http://getcomposer.org). [New to composer?](http://getcomposer.org/doc/00-intro.md)
 
-```JSON
-{
-    "require": {
-        "clue/redis-server": "dev-master"
-    }
-}
+```bash
+$ sudo apt-get install php5-cli git curl
+$ git clone https://github.com/clue/redis-server.git
+$ cd redis-server/
+$ curl -s https://getcomposer.org/installer | php
+$ php composer.phar install
 ```
 
 ## License
