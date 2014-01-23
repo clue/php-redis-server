@@ -3,6 +3,7 @@
 namespace Clue\Redis\Server;
 
 use Clue\Redis\Protocol\Model\ErrorReply;
+use Clue\Redis\Protocol\Model\StatusReply;
 use ReflectionClass;
 use ReflectionMethod;
 use Exception;
@@ -47,6 +48,12 @@ class Invoker
         }
         catch (Exception $e) {
             return $this->serializer->createReplyModel($e);
+        }
+
+        if ($ret === true && in_Array($command, array('set', 'setex', 'psetex', 'mset', 'rename'))) {
+            $ret = new StatusReply('OK');
+        } elseif (is_string($ret) && in_array($command, array('ping', 'type'))) {
+            $ret = new StatusReply($ret);
         }
 
         if (!($ret instanceof ModelInterface)) {

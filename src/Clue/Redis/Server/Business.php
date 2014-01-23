@@ -3,8 +3,6 @@
 namespace Clue\Redis\Server;
 
 use Clue\Redis\Server\Storage;
-use Clue\Redis\Protocol\Model\StatusReply;
-use Clue\Redis\Protocol\Model\ErrorReply;
 use Exception;
 
 class Business
@@ -24,9 +22,10 @@ class Business
         return $message;
     }
 
+    // StatusReply
     public function ping()
     {
-        return new StatusReply('PONG');
+        return 'PONG';
     }
 
     public function append($key, $value)
@@ -193,6 +192,7 @@ class Business
         return $this->storage->getStringOrNull($key);
     }
 
+    // StatusReply
     public function set($key, $value)
     {
         if (func_num_args() > 2) {
@@ -214,11 +214,11 @@ class Business
                     $nx = true;
                 } elseif ($arg === 'EX' || $arg === 'PX') {
                     if (!isset($args[$i + 1])) {
-                        throw new ErrorReply('ERR syntax error');
+                        throw new Exception('ERR syntax error');
                     }
                     $num = $this->coerceInteger($args[++$i]);
                     if ($num <= 0) {
-                        throw new ErrorReply('ERR invalid expire time in SETEX');
+                        throw new Exception('ERR invalid expire time in SETEX');
                     }
 
                     if ($arg === 'EX') {
@@ -227,7 +227,7 @@ class Business
                         $px = $num;
                     }
                 } else {
-                    throw new ErrorReply('ERR syntax error');
+                    throw new Exception('ERR syntax error');
                 }
             }
 
@@ -250,14 +250,16 @@ class Business
 
         $this->storage->setString($key, $value);
 
-        return new StatusReply('OK');
+        return true;
     }
 
+    // StatusReply
     public function setex($key, $seconds, $value)
     {
         return $this->psetex($key, $this->coerceInteger($seconds) * 1000, $value);
     }
 
+    // StatusReply
     public function psetex($key, $milliseconds, $value)
     {
         $milliseconds = $this->coerceInteger($milliseconds);
@@ -265,18 +267,18 @@ class Business
         $this->storage->setString($key, $value);
         $this->storage->setTimeout($key, microtime(true) + ($milliseconds / 1000));
 
-        return new StatusReply('OK');
+        return true;
     }
 
     public function setnx($key, $value)
     {
         if ($this->storage->hasKey($key)) {
-            return 0;
+            return false;
         }
 
         $this->storage->setString($key, $value);
 
-        return 1;
+        return true;
     }
 
     public function incr($key)
@@ -365,10 +367,10 @@ class Business
 
             if ($timeout !== null) {
                 $this->storage->setTimeout($key, null);
-                return 1;
+                return true;
             }
         }
-        return 0;
+        return false;
     }
 
     public function expire($key, $seconds)
@@ -391,11 +393,11 @@ class Business
         $millisecondTimestamp = $this->coerceInteger($millisecondTimestamp);
 
         if (!$this->storage->hasKey($key)) {
-            return 0;
+            return false;
         }
         $this->storage->setTimeout($key, $millisecondTimestamp / 1000);
 
-        return 1;
+        return true;
     }
 
     public function ttl($key)
@@ -443,6 +445,7 @@ class Business
         return $ret;
     }
 
+    // StatusReply
     public function mset($key0, $value0)
     {
         $n = func_num_args();
@@ -455,20 +458,20 @@ class Business
             $this->storage->setString($args[$i], $args[$i + 1]);
         }
 
-        return new StatusReply('OK');
+        return true;
     }
 
     public function msetnx($key0, $value0)
     {
         for ($i = 0, $n = func_num_args(); $i < $n; $i += 2) {
             if ($this->storage->hasKey(func_get_arg($i))) {
-                return 0;
+                return false;
             }
         }
 
         call_user_func_array(array($this, 'mset'), func_get_args());
 
-        return 1;
+        return true;
     }
 
     public function del($key0)
@@ -492,9 +495,10 @@ class Business
 
     public function exists($key)
     {
-        return (int)$this->storage->hasKey($key);
+        return $this->storage->hasKey($key);
     }
 
+    // StatusReply
     public function rename($key, $newkey)
     {
         if ($key === $newkey) {
@@ -509,7 +513,7 @@ class Business
 
         $this->storage->rename($key, $newkey);
 
-        return new StatusReply('OK');
+        return true;
     }
 
     public function renamenx($key, $newkey)
@@ -521,25 +525,26 @@ class Business
         }
 
         if ($this->storage->hasKey($newkey)) {
-            return 0;
+            return false;
         }
 
         $this->storage->rename($key, $newkey);
 
-        return 1;
+        return true;
     }
 
+    // StatusReply
     public function type($key)
     {
         if (!$this->storage->hasKey($key)) {
-            return new StatusReply('none');
+            return 'none';
         }
 
         $value = $this->storage->get($key);
         if (is_string($value)) {
-            return new StatusReply('string');
+            return 'string';
         } elseif ($value instanceof \SplDoublyLinkedList) {
-            return new StatusReply('list');
+            return 'list';
         } else {
             throw new UnexpectedValueException('Unknown datatype encountered');
         }

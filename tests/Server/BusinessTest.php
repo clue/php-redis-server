@@ -2,7 +2,6 @@
 
 use Clue\Redis\Server\Business;
 use Clue\Redis\Server\Storage;
-use Clue\Redis\Protocol\Model\StatusReply;
 
 class BusinessTest extends TestCase
 {
@@ -17,7 +16,7 @@ class BusinessTest extends TestCase
 
     public function testPing()
     {
-        $this->assertEquals(new StatusReply('PONG'), $this->business->ping());
+        $this->assertEquals('PONG', $this->business->ping());
     }
 
     public function testKeys()
@@ -25,7 +24,7 @@ class BusinessTest extends TestCase
         $this->assertEquals(array(), $this->business->keys('*'));
         $this->assertNull($this->business->randomkey());
 
-        $this->assertEquals(new StatusReply('OK'), $this->business->mset('one', '1', 'two', '2', 'three', '3'));
+        $this->assertTrue($this->business->mset('one', '1', 'two', '2', 'three', '3'));
 
         $this->assertEquals(array('one', 'two', 'three'), $this->business->keys('*'));
         $this->assertEquals(array('one', 'three'), $this->business->keys('*e'));
@@ -40,10 +39,10 @@ class BusinessTest extends TestCase
     {
         $this->assertNull($this->business->randomkey());
 
-        $this->assertEquals(new StatusReply('OK'), $this->business->set('key', 'value'));
+        $this->assertTrue($this->business->set('key', 'value'));
 
         // add a key that expires immediately, effectively leaving only a single 'key' for random selection
-        $this->assertEquals(new StatusReply('OK'), $this->business->setex('expired', '0', 'value'));
+        $this->assertTrue($this->business->setex('expired', '0', 'value'));
 
         $this->assertEquals('key', $this->business->randomkey());
     }
@@ -72,7 +71,7 @@ class BusinessTest extends TestCase
     public function testSortStore()
     {
         $this->assertEquals(0, $this->business->sort('list', 'STORE', 'target'));
-        $this->assertEquals(0, $this->business->exists('target'));
+        $this->assertFalse($this->business->exists('target'));
 
         $this->assertEquals(4, $this->business->rpush('list', '0', '8', '4', '12'));
         $this->assertEquals(4, $this->business->sort('list', 'STORE', 'target'));
@@ -87,7 +86,7 @@ class BusinessTest extends TestCase
     public function testSortByLookup()
     {
         $this->assertEquals(4, $this->business->rpush('list', 'three', 'one', 'four', 'two'));
-        $this->assertEquals(new StatusReply('OK'), $this->business->mset('weight_three', '3', 'weight_one', '1', 'weight_four', '4', 'weight_two', '2'));
+        $this->assertTrue($this->business->mset('weight_three', '3', 'weight_one', '1', 'weight_four', '4', 'weight_two', '2'));
 
         $this->assertEquals(array('one', 'two', 'three', 'four'), $this->business->sort('list', 'BY', 'weight_*'));
     }
@@ -107,7 +106,7 @@ class BusinessTest extends TestCase
     public function testSortGetLookup()
     {
         $this->assertEquals(3, $this->business->rpush('list', '3', '1', '2'));
-        $this->assertEquals(new StatusReply('OK'), $this->business->mset('name_1', 'one', 'name_2', 'two', 'name_3', 'three'));
+        $this->assertTrue($this->business->mset('name_1', 'one', 'name_2', 'two', 'name_3', 'three'));
 
         $this->assertEquals(array('1', '2', '3'), $this->business->sort('list', 'GET', '#'));
         $this->assertEquals(array('one', 'two', 'three'), $this->business->sort('list', 'GET', 'name_*'));
@@ -134,9 +133,9 @@ class BusinessTest extends TestCase
 
     public function testStorage()
     {
-        $this->assertEquals(0, $this->business->exists('test'));
-        $this->assertEquals(new StatusReply('OK'), $this->business->set('test', 'value'));
-        $this->assertEquals(1, $this->business->exists('test'));
+        $this->assertFalse($this->business->exists('test'));
+        $this->assertTrue($this->business->set('test', 'value'));
+        $this->assertTrue($this->business->exists('test'));
         $this->assertEquals('value', $this->business->get('test'));
     }
 
@@ -152,13 +151,13 @@ class BusinessTest extends TestCase
         $this->assertNull($this->business->set('test', 'value', 'xx'));
         $this->assertNull($this->business->get('test'));
 
-        $this->assertEquals(new StatusReply('OK'), $this->business->set('test', 'value', 'nx'));
+        $this->assertTrue($this->business->set('test', 'value', 'nx'));
         $this->assertEquals('value', $this->business->get('test'));
 
         $this->assertNull($this->business->set('test', 'newvalue', 'nx'));
         $this->assertEquals('value', $this->business->get('test'));
 
-        $this->assertEquals(new StatusReply('OK'), $this->business->set('test', 'newvalue', 'xx'));
+        $this->assertTrue($this->business->set('test', 'newvalue', 'xx'));
         $this->assertEquals('newvalue', $this->business->get('test'));
     }
 
@@ -188,17 +187,17 @@ class BusinessTest extends TestCase
     {
         $this->assertEquals(array(null, null), $this->business->mget('a', 'b'));
 
-        $this->assertEquals(new StatusReply('OK'), $this->business->mset('a', 'value1', 'c', 'value2'));
+        $this->assertTrue($this->business->mset('a', 'value1', 'c', 'value2'));
 
         $this->assertEquals(array('value1', null, 'value2'), $this->business->mget('a', 'b', 'c'));
     }
 
     public function testMsetNx()
     {
-        $this->assertEquals(1, $this->business->msetnx('a', 'b', 'c', 'd'));
+        $this->assertTrue($this->business->msetnx('a', 'b', 'c', 'd'));
         $this->assertEquals(array('b', 'd'), $this->business->mget('a', 'c'));
 
-        $this->assertEquals(0, $this->business->msetnx('b', 'c', 'c', 'e'));
+        $this->assertFalse($this->business->msetnx('b', 'c', 'c', 'e'));
     }
 
     /**
@@ -237,7 +236,7 @@ class BusinessTest extends TestCase
         $this->assertEquals(3, $this->business->lpush('list', 'a'));
 
         $this->assertEquals(3, $this->business->llen('list'));
-        $this->assertEquals(new StatusReply('list'), $this->business->type('list'));
+        $this->assertEquals('list', $this->business->type('list'));
 
         $this->assertEquals('c', $this->business->rpop('list'));
         $this->assertEquals('a', $this->business->lpop('list'));
@@ -245,14 +244,14 @@ class BusinessTest extends TestCase
 
         $this->assertNull($this->business->lpop('list'));
 
-        $this->assertEquals(0, $this->business->exists('list'));
+        $this->assertFalse($this->business->exists('list'));
 
         $this->assertEquals(1, $this->business->rpush('list', 'a'));
         $this->assertEquals('a', $this->business->rpop('list'));
         $this->assertEquals(null, $this->business->rpop('list'));
 
-        $this->assertEquals(0, $this->business->exists('list'));
-        $this->assertEquals(new StatusReply('none'), $this->business->type('list'));
+        $this->assertFalse($this->business->exists('list'));
+        $this->assertEquals('none', $this->business->type('list'));
     }
 
     public function testLpushOrder()
@@ -268,7 +267,7 @@ class BusinessTest extends TestCase
     {
         $this->assertEquals(0, $this->business->lpushx('list', 'a'));
         $this->assertEquals(0, $this->business->rpushx('list', 'b'));
-        $this->assertEquals(0, $this->business->exists('list'));
+        $this->assertFalse($this->business->exists('list'));
 
         $this->assertEquals(1, $this->business->lpush('list', 'c'));
 
@@ -283,17 +282,17 @@ class BusinessTest extends TestCase
     public function testRpopLpush()
     {
         $this->assertNull($this->business->rpoplpush('a', 'b'));
-        $this->assertEquals(0, $this->business->exists('b'));
+        $this->assertFalse($this->business->exists('b'));
 
         $this->assertEquals(3, $this->business->rpush('a', '1', '2', '3'));
 
         $this->assertEquals('3', $this->business->rpoplpush('a', 'b'));
-        $this->assertEquals(1, $this->business->exists('b'));
+        $this->assertTrue($this->business->exists('b'));
 
         $this->assertEquals('2', $this->business->rpoplpush('a', 'b'));
         $this->assertEquals('1', $this->business->rpoplpush('a', 'b'));
 
-        $this->assertEquals(0, $this->business->exists('a'));
+        $this->assertFalse($this->business->exists('a'));
     }
 
     public function testLindex()
@@ -332,7 +331,7 @@ class BusinessTest extends TestCase
 
     public function testGetrange()
     {
-        $this->assertEquals(new StatusReply('OK'), $this->business->set('test', 'This is a string'));
+        $this->assertTrue($this->business->set('test', 'This is a string'));
 
         $this->assertEquals('This', $this->business->getrange('test', 0, 3));
         $this->assertEquals('ing', $this->business->getrange('test', -3, -1));
