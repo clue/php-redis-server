@@ -59,6 +59,16 @@ class BusinessTest extends TestCase
         $this->assertEquals(array('0', '12', '4', '8'), $this->business->sort('list', 'ALPHA'));
     }
 
+    public function testSortWords()
+    {
+        $this->assertEquals(4, $this->business->rpush('list', 'dd', 'aa', 'cc', 'bb'));
+
+        $this->assertEquals(array('aa', 'bb', 'cc', 'dd'), $this->business->sort('list', 'ALPHA'));
+
+        $this->setExpectedException('Exception');
+        $this->business->sort('list');
+    }
+
     public function testSortStore()
     {
         $this->assertEquals(0, $this->business->sort('list', 'STORE', 'target'));
@@ -67,19 +77,31 @@ class BusinessTest extends TestCase
         $this->assertEquals(4, $this->business->rpush('list', '0', '8', '4', '12'));
         $this->assertEquals(4, $this->business->sort('list', 'STORE', 'target'));
 
-        $this->assertEquals(array('0', '4', '8', '12'), $this->business->sort('target', 'BY', 'as-is'));
+        $this->assertEquals('0', $this->business->lpop('target'));
+        $this->assertEquals('4', $this->business->lpop('target'));
+        $this->assertEquals('8', $this->business->lpop('target'));
+        $this->assertEquals('12', $this->business->lpop('target'));
+        $this->assertNull($this->business->lpop('target'));
     }
 
     public function testSortByLookup()
     {
-        $this->assertEquals(3, $this->business->rpush('list', 'three', 'one', 'two'));
-        $this->assertEquals(new StatusReply('OK'), $this->business->mset('weight_one', '1', 'weight_two', '2', 'weight_three', '3'));
+        $this->assertEquals(4, $this->business->rpush('list', 'three', 'one', 'four', 'two'));
+        $this->assertEquals(new StatusReply('OK'), $this->business->mset('weight_three', '3', 'weight_one', '1', 'weight_four', '4', 'weight_two', '2'));
 
-        $this->assertEquals(array('one', 'two', 'three'), $this->business->sort('list', 'BY', 'weight_*'));
-        $this->assertEquals(array('three', 'two', 'one'), $this->business->sort('list', 'BY', 'weight_*', 'DESC'));
+        $this->assertEquals(array('one', 'two', 'three', 'four'), $this->business->sort('list', 'BY', 'weight_*'));
+    }
 
-        $this->assertEquals(array('three', 'one', 'two'), $this->business->sort('list', 'BY', 'unknown'));
-        $this->assertEquals(array('one', 'three', 'two'), $this->business->sort('list', 'BY', 'unknown', 'ALPHA'));
+    public function testSortByLookupUnknown()
+    {
+        $this->assertEquals(4, $this->business->rpush('list', 'three', 'one', 'four', 'two'));
+        $this->assertEquals(array('four', 'one', 'three', 'two'), $this->business->sort('list', 'BY', 'unknown_*'));
+    }
+
+    public function testSortByLookupNosort()
+    {
+        $this->assertEquals(4, $this->business->rpush('list', 'three', 'one', 'four', 'two'));
+        $this->assertEquals(array('three', 'one', 'four', 'two'), $this->business->sort('list', 'BY', 'nosort'));
     }
 
     public function testSortGetLookup()

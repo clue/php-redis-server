@@ -100,32 +100,44 @@ class Business
             }
         }
 
-        if ($by !== null) {
-            $lookup = array();
-            foreach (array_unique($list) as $v) {
-                $key = str_replace('*', $v, $by);
-                $lookup[$v] = $this->storage->getStringOrNull($key);
-                if ($lookup[$v] === null) {
-                    $lookup[$v] = $v;
+        if ($sort === SORT_NUMERIC) {
+            $cmp = function($a, $b) {
+                $fa = (float)$a;
+                $fb = (float)$b;
+                if ((string)$fa !== $a || (string)$fb !== $b) {
+                    throw new Exception('ERR One or more scores can\'t be converted into double');
                 }
-            }
-
-            if ($sort === SORT_NUMERIC) {
-                $cmp = function($a, $b) {
-                    $a = (float)$a;
-                    $b = (float)$b;
-                    return ($a < $b) ? 1 : (($a > $b) ? -1 : 0);
-                };
-            } else {
-                $cmp = 'strcmp';
-            }
-
-            usort($list, function($a, $b) use ($lookup, $cmp) {
-                return $cmp($lookup[$a], $lookup[$b]);
-            });
+                return ($fa < $fb) ? -1 : (($fa > $fb) ? 1 : 0);
+            };
+        } else {
+            $cmp = 'strcmp';
         }
 
-        sort($list, $sort);
+        if ($by !== null) {
+            $pos = strpos($by, '*');
+            if ($pos === false) {
+                $cmp = null;
+            } else {
+                $cmp = 'strcmp';
+
+                $lookup = array();
+                foreach (array_unique($list) as $v) {
+                    $key = str_replace('*', $v, $by);
+                    $lookup[$v] = $this->storage->getStringOrNull($key);
+                    if ($lookup[$v] === null) {
+                        $lookup[$v] = $v;
+                    }
+                }
+
+                $cmp = function($a, $b) use ($cmp, $lookup){
+                    return $cmp($lookup[$a], $lookup[$b]);
+                };
+            }
+        }
+
+        if ($cmp !== null) {
+            usort($list, $cmp);
+        }
 
         if ($desc) {
             $list = array_reverse($list);
