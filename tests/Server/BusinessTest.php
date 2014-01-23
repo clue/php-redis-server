@@ -48,6 +48,68 @@ class BusinessTest extends TestCase
         $this->assertEquals('key', $this->business->randomkey());
     }
 
+    public function testSort()
+    {
+        $this->assertEquals(array(), $this->business->sort('list'));
+
+        $this->assertEquals(4, $this->business->rpush('list', '0', '8', '4', '12'));
+
+        $this->assertEquals(array('0', '4', '8', '12'), $this->business->sort('list'));
+        $this->assertEquals(array('12', '8', '4', '0'), $this->business->sort('list', 'DESC'));
+        $this->assertEquals(array('0', '12', '4', '8'), $this->business->sort('list', 'ALPHA'));
+    }
+
+    public function testSortStore()
+    {
+        $this->assertEquals(0, $this->business->sort('list', 'STORE', 'target'));
+        $this->assertEquals(0, $this->business->exists('target'));
+
+        $this->assertEquals(4, $this->business->rpush('list', '0', '8', '4', '12'));
+        $this->assertEquals(4, $this->business->sort('list', 'STORE', 'target'));
+
+        $this->assertEquals(array('0', '4', '8', '12'), $this->business->sort('target', 'BY', 'as-is'));
+    }
+
+    public function testSortByLookup()
+    {
+        $this->assertEquals(3, $this->business->rpush('list', 'three', 'one', 'two'));
+        $this->assertEquals(new StatusReply('OK'), $this->business->mset('weight_one', '1', 'weight_two', '2', 'weight_three', '3'));
+
+        $this->assertEquals(array('one', 'two', 'three'), $this->business->sort('list', 'BY', 'weight_*'));
+        $this->assertEquals(array('three', 'two', 'one'), $this->business->sort('list', 'BY', 'weight_*', 'DESC'));
+
+        $this->assertEquals(array('three', 'one', 'two'), $this->business->sort('list', 'BY', 'unknown'));
+        $this->assertEquals(array('one', 'three', 'two'), $this->business->sort('list', 'BY', 'unknown', 'ALPHA'));
+    }
+
+    public function testSortGetLookup()
+    {
+        $this->assertEquals(3, $this->business->rpush('list', '3', '1', '2'));
+        $this->assertEquals(new StatusReply('OK'), $this->business->mset('name_1', 'one', 'name_2', 'two', 'name_3', 'three'));
+
+        $this->assertEquals(array('1', '2', '3'), $this->business->sort('list', 'GET', '#'));
+        $this->assertEquals(array('one', 'two', 'three'), $this->business->sort('list', 'GET', 'name_*'));
+        $this->assertEquals(array('one', '1', null, 'two', '2', null, 'three', '3', null), $this->business->sort('list', 'GET', 'name_*', 'GET', '#', 'GET', 'unknown'));
+    }
+
+    public function testSortLimit()
+    {
+        $this->assertEquals(4, $this->business->rpush('list', '3', '1', '2', '4'));
+
+        $this->assertEquals(array('1', '2'), $this->business->sort('list', 'LIMIT', '0', '2'));
+        $this->assertEquals(array('3', '4'), $this->business->sort('list', 'LIMIT', '2', '2'));
+
+        $this->assertEquals(array('3', '4'), $this->business->sort('list', 'LIMIT', '2', '100'));
+        $this->assertEquals(array(), $this->business->sort('list', 'LIMIT', '100', '100'));
+    }
+
+    public function testSortGetWinsOverLimit()
+    {
+        $this->assertEquals(3, $this->business->rpush('list', '3', '1', '2'));
+
+        $this->assertEquals(array('1', '1', '2', '2'), $this->business->sort('list', 'GET', '#', 'GET', '#', 'LIMIT', '0', '2'));
+    }
+
     public function testStorage()
     {
         $this->assertEquals(0, $this->business->exists('test'));

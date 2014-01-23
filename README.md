@@ -46,6 +46,7 @@ So far, the following list of commands shows what's already implemented:
   * RANDOMKEY
   * RENAME
   * RENAMENX
+  * SORT
   * TTL
   * TYPE
 * Strings

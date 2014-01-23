@@ -55,6 +55,127 @@ class Business
         return $this->storage->getRandomKey();
     }
 
+    public function sort($key)
+    {
+        if ($this->storage->hasKey($key)) {
+            $list = iterator_to_array($this->storage->getOrCreateList($key), false);
+        } else {
+            // no need to sort, but validate arguments in order to be consistent with reference implementation
+            $list = array();
+        }
+
+        $by     = null;
+        $offset = null;
+        $count  = null;
+        $get    = array();
+        $desc   = false;
+        $sort   = SORT_NUMERIC;
+        $store  = null;
+
+        $args = func_get_args();
+        $next = function() use (&$args, &$i) {
+            if (!isset($args[$i + 1])) {
+                throw new Exception('ERR syntax error');
+            }
+            return $args[++$i];
+        };
+        for ($i = 1, $l = count($args); $i < $l; ++$i) {
+            $arg = strtoupper($args[$i]);
+
+            if ($arg === 'BY') {
+                $by = $next();
+            } elseif ($arg === 'LIMIT') {
+                $offset = $this->coerceInteger($next());
+                $count  = $this->coerceInteger($next());
+            } elseif ($arg === 'GET') {
+                $get []= $next();
+            } elseif ($arg === 'ASC' || $arg === 'DESC') {
+                $desc = ($arg === 'DESC');
+            } elseif ($arg === 'ALPHA') {
+                $sort = SORT_STRING;
+            } elseif ($arg === 'STORE') {
+                $store = $next();
+            } else {
+                throw new Exception('ERR syntax error');
+            }
+        }
+
+        if ($by !== null) {
+            $lookup = array();
+            foreach (array_unique($list) as $v) {
+                $key = str_replace('*', $v, $by);
+                $lookup[$v] = $this->storage->getStringOrNull($key);
+                if ($lookup[$v] === null) {
+                    $lookup[$v] = $v;
+                }
+            }
+
+            if ($sort === SORT_NUMERIC) {
+                $cmp = function($a, $b) {
+                    $a = (float)$a;
+                    $b = (float)$b;
+                    return ($a < $b) ? 1 : (($a > $b) ? -1 : 0);
+                };
+            } else {
+                $cmp = 'strcmp';
+            }
+
+            usort($list, function($a, $b) use ($lookup, $cmp) {
+                return $cmp($lookup[$a], $lookup[$b]);
+            });
+        }
+
+        sort($list, $sort);
+
+        if ($desc) {
+            $list = array_reverse($list);
+        }
+
+        if ($offset !== null) {
+            $list = array_slice($list, $offset, $count, false);
+        }
+
+        if ($get) {
+            $storage = $this->storage;
+            $lookup = function($key, $pattern) use ($storage) {
+                if ($pattern === '#') {
+                    return $key;
+                }
+
+                $l = str_replace('*', $key, $pattern);
+
+                static $cached = array();
+
+                if (!array_key_exists($l, $cached)) {
+                    $cached[$l] = $storage->getStringOrNull($l);
+                }
+
+                return $cached[$l];
+            };
+            $keys = $list;
+            $list = array();
+
+            foreach ($keys as $key) {
+                foreach ($get as $pattern) {
+                    $list []= $lookup($key, $pattern);
+                }
+            }
+        }
+
+        if ($store !== null) {
+            $this->storage->unsetKey($store);
+
+            if (!$list) {
+                return 0;
+            }
+
+            array_unshift($list, $store);
+            return call_user_func_array(array($this, 'rpush'), $list);
+        }
+
+        return $list;
+    }
+
     public function get($key)
     {
         return $this->storage->getStringOrNull($key);
