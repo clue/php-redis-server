@@ -33,6 +33,8 @@ class Invoker
 
     public function invoke($command, array $args)
     {
+        $command = strtolower($command);
+
         if (!isset($this->commands[$command])) {
             return $this->serializer->getErrorMessage('ERR Unknown or disabled command \'' . $command . '\'');
         }
