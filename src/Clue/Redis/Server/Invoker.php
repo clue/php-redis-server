@@ -34,25 +34,25 @@ class Invoker
     public function invoke($command, array $args)
     {
         if (!isset($this->commands[$command])) {
-            return new ErrorReply('ERR Unknown or disabled command \'' . $command . '\'');
+            return $this->serializer->getErrorMessage('ERR Unknown or disabled command \'' . $command . '\'');
         }
 
         $n = count($args);
         if ($n < $this->commands[$command]) {
-            return new ErrorReply('ERR wrong number of arguments for \'' . $command . '\' command');
+            return $this->serializer->getErrorMessage('ERR wrong number of arguments for \'' . $command . '\' command');
         }
 
         try {
             $ret = call_user_func_array(array($this->business, $command), $args);
         }
         catch (Exception $e) {
-            return $this->serializer->createReplyModel($e);
+            return $this->serializer->getErrorMessage($e);
         }
 
-        if (!($ret instanceof ModelInterface)) {
-            $ret = $this->serializer->createReplyModel($ret);
+        if ($ret instanceof ModelInterface) {
+            return $ret->getMessageSerialized($this->serializer);
         }
 
-        return $ret;
+        return $this->serializer->getReplyMessage($ret);
     }
 }
