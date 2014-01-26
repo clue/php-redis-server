@@ -674,6 +674,48 @@ class Business
         return $list->offsetGet($index);
     }
 
+    public function lrange($key, $start, $stop)
+    {
+        if (!$this->storage->hasKey($key)) {
+            return array();
+        }
+
+        $start = $this->coerceInteger($start);
+        $stop  = $this->coerceInteger($stop);
+
+        $list = $this->storage->getOrCreateList($key);
+
+        $len = $this->llen($key);
+        if ($start < 0) {
+            $start += $len;
+        }
+        if ($stop < 0) {
+            $stop += $len;
+        }
+        if (($stop + 1) > $len) {
+            $stop = $len - 1;
+        }
+
+        if ($stop < $start || $stop < 0 || $start > $len) {
+            return array();
+        }
+
+        $list->rewind();
+        for ($i = 0; $i < $start; ++$i) {
+            $list->next();
+        }
+
+        $ret = array();
+
+        while($i <= $stop) {
+            $ret []= $list->current();
+            $list->next();
+            ++$i;
+        }
+
+        return $ret;
+    }
+
     private function coerceInteger($value)
     {
         $int = (int)$value;
