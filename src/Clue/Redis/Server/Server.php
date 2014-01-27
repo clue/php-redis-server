@@ -13,9 +13,10 @@ use Clue\Redis\Protocol\Model\MultiBulkReply;
 use Clue\Redis\Protocol\Parser\ParserException;
 use SplObjectStorage;
 use Exception;
-use Clue\Redis\React\Client\Request;
+use Clue\Redis\Protocol\Model\Request;
 use ReflectionMethod;
 use ReflectionException;
+use Clue\Redis\Protocol\Parser\RequestParser;
 
 /**
  * Dummy redis server implementation
@@ -60,7 +61,8 @@ class Server extends EventEmitter
 
     public function handleConnection(Connection $connection)
     {
-        $parser = $this->protocol->createParser();
+        $parser = $this->protocol->createResponseParser();
+        $parser = new RequestParser();
         $that = $this;
 
         $client = new Client($connection);
@@ -68,14 +70,14 @@ class Server extends EventEmitter
 
         $connection->on('data', function ($data) use ($parser, $that, $client) {
             try {
-                $parser->pushIncoming($data);
+                $messages = $parser->pushIncoming($data);
             }
             catch (ParserException $e) {
                 $that->emit('error', array($e, $client));
                 return;
             }
-            while ($parser->hasIncomingModel()) {
-                $that->handleRequest($parser->popIncomingModel(), $client);
+            foreach ($messages as $message) {
+                $that->handleRequest($message, $client);
             }
         });
 
@@ -93,21 +95,11 @@ class Server extends EventEmitter
         $this->emit('disconnection', array($client, $this));
     }
 
-    public function handleRequest(ModelInterface $request, Client $client)
+    public function handleRequest(Request $request, Client $client)
     {
         $this->emit('request', array($request, $client));
 
-        if (!($request instanceof MultiBulkReply) || !$request->isRequest()) {
-            $model = new ErrorReply('ERR Malformed request. Bye!');
-            $client->write($model);
-            $client->end();
-            return;
-        }
-
-        $args = $request->getValueNative();
-        $method = strtolower(array_shift($args));
-
-        $ret = $this->business->invoke($method, $args);
+        $ret = $this->business->invoke($request->getCommand(), $request->getArgs());
         if ($ret !== null) {
             $client->write($ret);
         }

@@ -29,9 +29,9 @@ class Client
         $this->connection->end();
     }
 
-    public function write(ModelInterface $response)
+    public function write($data)
     {
-        $this->connection->write($response->getMessageSerialized());
+        $this->connection->write($data);
     }
 
     public function getRequestDebug(ModelInterface $request)

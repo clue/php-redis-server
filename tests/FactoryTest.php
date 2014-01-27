@@ -13,6 +13,10 @@ class FactoryTest extends TestCase
 
     public function testPairAuthRejectDisconnects()
     {
+        if (defined('HPHP_VERSION')) {
+            $this->markTestSkipped();
+        }
+
         $server = null;
 
         // bind to a random port on the local interface
