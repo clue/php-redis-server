@@ -107,25 +107,39 @@ Some benchmarking results:
 
 ```
 # official redis-server
-$ redis-benchmark -t set,get -q
+$ redis-server --port 1338
+$ redis-benchmark -t set,get -p 1338 -q
 SET: 121951.22 requests per second
 GET: 151515.16 requests per second
 
 # clue/redis-server PHP 5.5
+$ php example/server.php
 $ redis-benchmark -t set,get -p 1337 -q
 SET: 18761.73 requests per second
 GET: 22172.95 requests per second
 
 # clue/redis-server HHVM
+$ hhvm -vEval.Jit=true example/server.php
 $ redis-benchmark -t set,get -p 1337 -q
 SET: 49019.61 requests per second
 GET: 57142.86 requests per second
 ```
 
-So depending on your configuration, expect the original implementation to be 2x to 5x as fast.
+So depending on your configuration, expect the original implementation to be
+2x to 5x as fast. Some thoughts that have a significant effect on the
+performance:
+
 - HHVM is significantly faster than standard PHP (2.5x)
-- Installing `ext-libevent` will significantly improve the performance for concurrent connections. This is not a hard requirement, but `redis-benchmark` defaults to 50 concurrent connections which slows down the whole server process due to relying on a `stream_select()` call otherwise.
-- Disabling debugging output by commenting out the `echo`s in the examples significantly improves performance (3x)
+- Installing `ext-libevent` (not available for HHVM unfortunately) will
+  significantly improve the performance for concurrent connections.
+  This is not a hard requirement, but `redis-benchmark` defaults to 50
+  concurrent connections which slows down the whole server process due to
+  relying on a `stream_select()` call otherwise.
+- The `example/server.php` includes a `$debug` flag (which defaults to `false`).
+  Disabled debugging output significantly improves performance (3x)
+- The benchmark should not be run from within a virtual machine. Running this on
+  the host machine instead shows significant improvements (8x). For comparision,
+  the same applies to official redis, although it shows a smaller impact (3x).
 
 ## Quickstart example
 
