@@ -8,11 +8,17 @@ use ReflectionMethod;
 use Exception;
 use Clue\Redis\Protocol\Serializer\SerializerInterface;
 use Clue\Redis\Protocol\Model\ModelInterface;
+use Clue\Redis\Protocol\Model\Request;
 
 class Invoker
 {
     private $business;
     private $commands = array();
+    private $commandType = array();
+
+    const TYPE_AUTO = 0;
+    const TYPE_STRING_STATUS = 1;
+    const TYPE_TRUE_STATUS = 2;
 
     public function __construct($business, SerializerInterface $serializer)
     {
@@ -24,6 +30,14 @@ class Invoker
             /* @var $method ReflectionMethod */
             $this->commands[$method->getName()] = $this->getNumberOfArguments($method);
         }
+
+        foreach (array('ping', 'set', 'setex', 'psetex', 'type') as $command) {
+            $this->commandType[$command] = self::TYPE_STRING_STATUS;
+        }
+
+        foreach(array('set', 'setex', 'psetex', 'mset', 'rename') as $command) {
+            $this->commandType[$command] = self::TYPE_TRUE_STATUS;
+        }
     }
 
     private function getNumberOfArguments(ReflectionMethod $method)
@@ -31,9 +45,10 @@ class Invoker
         return $method->getNumberOfRequiredParameters();
     }
 
-    public function invoke($command, array $args)
+    public function invoke(Request $request)
     {
-        $command = strtolower($command);
+        $command = strtolower($request->getCommand());
+        $args    = $request->getArgs();
 
         if (!isset($this->commands[$command])) {
             return $this->serializer->getErrorMessage('ERR Unknown or disabled command \'' . $command . '\'');
@@ -48,11 +63,15 @@ class Invoker
             $ret = call_user_func_array(array($this->business, $command), $args);
         }
         catch (Exception $e) {
-            return $this->serializer->getErrorMessage($e);
+            return $this->serializer->getErrorMessage($e->getMessage());
         }
 
-        if ($ret instanceof ModelInterface) {
-            return $ret->getMessageSerialized($this->serializer);
+        if (isset($this->commandType[$command])) {
+            if ($this->commandType[$command] === self::TYPE_STRING_STATUS && is_string($ret)) {
+                return $this->serializer->getStatusMessage($ret);
+            } elseif ($this->commandType[$command] === self::TYPE_TRUE_STATUS && $ret === true) {
+                return $this->serializer->getStatusMessage('OK');
+            }
         }
 
         return $this->serializer->getReplyMessage($ret);
