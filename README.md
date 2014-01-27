@@ -20,7 +20,7 @@ installed? Simply put, you wouldn't. Ever.
 * ✓ Implement an in-memory datastore using the redis protocol
 * ✓ Compatiblity with common redis clients
   * ✓ redis-cli
-  * ✓ redis-benchmark* (only a subset of its commands)
+  * ✓ redis-benchmark
 * ✓ SOLID and modern design, tested and modular components
 * ✗ Implement *all* commands (see below for list of supported commands)
 * ✗ Compatibility with common tools resque(-php) etc.
@@ -73,6 +73,7 @@ So far, the following list of commands shows what's already implemented:
   * LPOP
   * LPUSH
   * LPUSHX
+  * LRANGE
   * RPOP
   * RPOPLPUSH
   * RPUSH
@@ -96,11 +97,10 @@ supported by redis. If you find a command is missing, please submit a PR :)
 > As usual, just about *every* benchmark is biased - you've been warned.
 
 You can use the `redis-benchmark` script that is included when installing the
-official redis server. However, this project does not *yet* implement all
-commands, so you should usually limit them like this:
+official redis server.
 
 ```bash
-$ redis-benchmark -p 1337 -t get,set
+$ redis-benchmark -p 1337 -q
 ```
 
 Some benchmarking results:

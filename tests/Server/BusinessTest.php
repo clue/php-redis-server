@@ -310,6 +310,21 @@ class BusinessTest extends TestCase
         $this->assertNull($this->business->lindex('list', -4));
     }
 
+    public function testLrange()
+    {
+        $this->assertEquals(array(), $this->business->lrange('list', '0', '100'));
+
+        $this->business->rpush('list', 'a', 'b', 'c', 'd');
+
+        $this->assertEquals(array('b', 'c'), $this->business->lrange('list', '1', '2'));
+        $this->assertEquals(array('c', 'd'), $this->business->lrange('list', '2', '100'));
+        $this->assertEquals(array('a'), $this->business->lrange('list', '0', '0'));
+        $this->assertEquals(array('d'), $this->business->lrange('list', '-1', '-1'));
+
+        $this->assertEquals(array(), $this->business->lrange('list', '2', '1'));
+        $this->assertEquals(array(), $this->business->lrange('list', '100', '200'));
+    }
+
     public function testAppend()
     {
         $this->assertEquals(5, $this->business->append('test', 'value'));

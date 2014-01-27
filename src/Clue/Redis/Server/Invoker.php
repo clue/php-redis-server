@@ -9,11 +9,17 @@ use ReflectionMethod;
 use Exception;
 use Clue\Redis\Protocol\Serializer\SerializerInterface;
 use Clue\Redis\Protocol\Model\ModelInterface;
+use Clue\Redis\Protocol\Model\Request;
 
 class Invoker
 {
     private $business;
     private $commands = array();
+    private $commandType = array();
+
+    const TYPE_AUTO = 0;
+    const TYPE_STRING_STATUS = 1;
+    const TYPE_TRUE_STATUS = 2;
 
     public function __construct($business, SerializerInterface $serializer)
     {
@@ -25,6 +31,14 @@ class Invoker
             /* @var $method ReflectionMethod */
             $this->commands[$method->getName()] = $this->getNumberOfArguments($method);
         }
+
+        foreach (array('ping', 'type') as $command) {
+            $this->commandType[$command] = self::TYPE_STRING_STATUS;
+        }
+
+        foreach(array('set', 'setex', 'psetex', 'mset', 'rename') as $command) {
+            $this->commandType[$command] = self::TYPE_TRUE_STATUS;
+        }
     }
 
     private function getNumberOfArguments(ReflectionMethod $method)
@@ -32,34 +46,35 @@ class Invoker
         return $method->getNumberOfRequiredParameters();
     }
 
-    public function invoke($command, array $args)
+    public function invoke(Request $request)
     {
+        $command = strtolower($request->getCommand());
+        $args    = $request->getArgs();
+
         if (!isset($this->commands[$command])) {
-            return new ErrorReply('ERR Unknown or disabled command \'' . $command . '\'');
+            return $this->serializer->getErrorMessage('ERR Unknown or disabled command \'' . $command . '\'');
         }
 
         $n = count($args);
         if ($n < $this->commands[$command]) {
-            return new ErrorReply('ERR wrong number of arguments for \'' . $command . '\' command');
+            return $this->serializer->getErrorMessage('ERR wrong number of arguments for \'' . $command . '\' command');
         }
 
         try {
             $ret = call_user_func_array(array($this->business, $command), $args);
         }
         catch (Exception $e) {
-            return $this->serializer->createReplyModel($e);
+            return $this->serializer->getErrorMessage($e->getMessage());
         }
 
-        if ($ret === true && in_Array($command, array('set', 'setex', 'psetex', 'mset', 'rename'))) {
-            $ret = new StatusReply('OK');
-        } elseif (is_string($ret) && in_array($command, array('ping', 'type'))) {
-            $ret = new StatusReply($ret);
+        if (isset($this->commandType[$command])) {
+            if ($this->commandType[$command] === self::TYPE_STRING_STATUS && is_string($ret)) {
+                return $this->serializer->getStatusMessage($ret);
+            } elseif ($this->commandType[$command] === self::TYPE_TRUE_STATUS && $ret === true) {
+                return $this->serializer->getStatusMessage('OK');
+            }
         }
 
-        if (!($ret instanceof ModelInterface)) {
-            $ret = $this->serializer->createReplyModel($ret);
-        }
-
-        return $ret;
+        return $this->serializer->getReplyMessage($ret);
     }
 }
