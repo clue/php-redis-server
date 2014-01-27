@@ -99,7 +99,7 @@ class Server extends EventEmitter
     {
         $this->emit('request', array($request, $client));
 
-        $ret = $this->business->invoke($request->getCommand(), $request->getArgs());
+        $ret = $this->business->invoke($request);
         if ($ret !== null) {
             $client->write($ret);
         }
