@@ -10,11 +10,13 @@ class Client
 {
     private $connection;
     private $business;
+    private $database;
 
-    public function __construct(Connection $connection, Invoker $business)
+    public function __construct(Connection $connection, Invoker $business, Storage $database)
     {
         $this->connection = $connection;
         $this->business = $business;
+        $this->database = $database;
     }
 
     public function getRemoteAddress()
@@ -39,7 +41,7 @@ class Client
 
     public function getRequestDebug(ModelInterface $request)
     {
-        $ret = sprintf('%.06f', microtime(true)) . ' [0 ' . $this->getRemoteAddress() . ']';
+        $ret = sprintf('%.06f', microtime(true)) . ' [' . $this->database->getId() . ' ' . $this->getRemoteAddress() . ']';
 
         foreach($request->getValueNative() as $one) {
             $ret .= ' "' . addslashes($one) . '"';

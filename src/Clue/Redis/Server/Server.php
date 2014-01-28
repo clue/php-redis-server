@@ -32,6 +32,7 @@ class Server extends EventEmitter
     private $protocol;
     private $business;
     private $clients;
+    private $database;
 
     public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, Invoker $business = null)
     {
@@ -39,12 +40,14 @@ class Server extends EventEmitter
             $protocol = new ProtocolFactory();
         }
 
+        $this->database = new Storage();
+
         if ($business === null) {
             $business = new Invoker($protocol->createSerializer());
             $business->addCommands(new Business\Connection());
-            $business->addCommands(new Business\Keys());
-            $business->addCommands(new Business\Lists());
-            $business->addCommands(new Business\Strings());
+            $business->addCommands(new Business\Keys($this->database));
+            $business->addCommands(new Business\Lists($this->database));
+            $business->addCommands(new Business\Strings($this->database));
             $business->renameCommand('x_echo', 'echo');
         }
 
@@ -67,7 +70,7 @@ class Server extends EventEmitter
         $parser = new RequestParser();
         $that = $this;
 
-        $client = new Client($connection, $this->business);
+        $client = new Client($connection, $this->business, $this->database);
         $this->clients->attach($client);
 
         $connection->on('data', function ($data) use ($parser, $that, $client) {

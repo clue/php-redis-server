@@ -9,6 +9,11 @@ class Storage
     private $storage = array();
     private $timeout = array();
 
+    public function getId()
+    {
+        return '0';
+    }
+
     public function unsetKey($key)
     {
         unset($this->storage[$key], $this->timeout[$key]);
