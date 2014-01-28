@@ -39,7 +39,7 @@ class Server extends EventEmitter
         }
 
         if ($business === null) {
-            $business = new Business();
+            //$business = new Business();
         }
 
         if (!($business instanceof Invoker)) {
@@ -65,7 +65,7 @@ class Server extends EventEmitter
         $parser = new RequestParser();
         $that = $this;
 
-        $client = new Client($connection);
+        $client = new Client($connection, $this->business);
         $this->clients->attach($client);
 
         $connection->on('data', function ($data) use ($parser, $that, $client) {
@@ -99,10 +99,7 @@ class Server extends EventEmitter
     {
         $this->emit('request', array($request, $client));
 
-        $ret = $this->business->invoke($request);
-        if ($ret !== null) {
-            $client->write($ret);
-        }
+        $client->handleRequest($request);
     }
 
     public function close()

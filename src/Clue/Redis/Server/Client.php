@@ -4,14 +4,17 @@ namespace Clue\Redis\Server;
 
 use React\Socket\Connection;
 use Clue\Redis\Protocol\Model\ModelInterface;
+use Clue\Redis\Protocol\Model\Request;
 
 class Client
 {
     private $connection;
+    private $business;
 
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, Invoker $business)
     {
         $this->connection = $connection;
+        $this->business = $business;
     }
 
     public function getRemoteAddress()
@@ -43,5 +46,13 @@ class Client
         }
 
         return $ret;
+    }
+
+    public function handleRequest(Request $request)
+    {
+        $ret = $this->business->invoke($request);
+        if ($ret !== null) {
+            $this->write($ret);
+        }
     }
 }
