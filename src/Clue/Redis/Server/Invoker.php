@@ -10,14 +10,9 @@ use Exception;
 use Clue\Redis\Protocol\Serializer\SerializerInterface;
 use Clue\Redis\Protocol\Model\ModelInterface;
 use Clue\Redis\Protocol\Model\Request;
-use Clue\Redis\Server\Business\Connection;
-use Clue\Redis\Server\Business\Keys;
-use Clue\Redis\Server\Business\Lists;
-use Clue\Redis\Server\Business\Strings;
 
 class Invoker
 {
-    private $business;
     private $commands    = array();
     private $commandArgs = array();
     private $commandType = array();
@@ -26,15 +21,9 @@ class Invoker
     const TYPE_STRING_STATUS = 1;
     const TYPE_TRUE_STATUS = 2;
 
-    public function __construct($business, SerializerInterface $serializer)
+    public function __construct(SerializerInterface $serializer)
     {
-        $this->business = $business;
         $this->serializer = $serializer;
-
-        $this->addCommands(new Connection());
-        $this->addCommands(new Keys());
-        $this->addCommands(new Lists());
-        $this->addCommands(new Strings());
 
         foreach (array('ping', 'type') as $command) {
             $this->commandType[$command] = self::TYPE_STRING_STATUS;
@@ -43,8 +32,6 @@ class Invoker
         foreach(array('set', 'setex', 'psetex', 'mset', 'rename') as $command) {
             $this->commandType[$command] = self::TYPE_TRUE_STATUS;
         }
-
-        $this->renameCommand('x_echo', 'echo');
     }
 
     private function getNumberOfArguments(ReflectionMethod $method)

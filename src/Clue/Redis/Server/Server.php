@@ -17,6 +17,7 @@ use Clue\Redis\Protocol\Model\Request;
 use ReflectionMethod;
 use ReflectionException;
 use Clue\Redis\Protocol\Parser\RequestParser;
+use Clue\Redis\Server\Business;
 
 /**
  * Dummy redis server implementation
@@ -32,18 +33,19 @@ class Server extends EventEmitter
     private $business;
     private $clients;
 
-    public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, $business = null)
+    public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, Invoker $business = null)
     {
         if ($protocol === null) {
             $protocol = new ProtocolFactory();
         }
 
         if ($business === null) {
-            //$business = new Business();
-        }
-
-        if (!($business instanceof Invoker)) {
-            $business = new Invoker($business, $protocol->createSerializer());
+            $business = new Invoker($protocol->createSerializer());
+            $business->addCommands(new Business\Connection());
+            $business->addCommands(new Business\Keys());
+            $business->addCommands(new Business\Lists());
+            $business->addCommands(new Business\Strings());
+            $business->renameCommand('x_echo', 'echo');
         }
 
         $this->socket = $socket;
