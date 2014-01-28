@@ -14,7 +14,8 @@ use Clue\Redis\Protocol\Model\Request;
 class Invoker
 {
     private $business;
-    private $commands = array();
+    private $commands    = array();
+    private $commandArgs = array();
     private $commandType = array();
 
     const TYPE_AUTO = 0;
@@ -26,19 +27,7 @@ class Invoker
         $this->business = $business;
         $this->serializer = $serializer;
 
-        $ref = new ReflectionClass($business);
-        foreach ($ref->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            /* @var $method ReflectionMethod */
-            $this->commands[$method->getName()] = $this->getNumberOfArguments($method);
-        }
-
-        foreach (array('ping', 'type') as $command) {
-            $this->commandType[$command] = self::TYPE_STRING_STATUS;
-        }
-
-        foreach(array('set', 'setex', 'psetex', 'mset', 'rename') as $command) {
-            $this->commandType[$command] = self::TYPE_TRUE_STATUS;
-        }
+        $this->addCommands($business);
     }
 
     private function getNumberOfArguments(ReflectionMethod $method)
@@ -56,12 +45,12 @@ class Invoker
         }
 
         $n = count($args);
-        if ($n < $this->commands[$command]) {
+        if ($n < $this->commandArgs[$command]) {
             return $this->serializer->getErrorMessage('ERR wrong number of arguments for \'' . $command . '\' command');
         }
 
         try {
-            $ret = call_user_func_array(array($this->business, $command), $args);
+            $ret = call_user_func_array($this->commands[$command], $args);
         }
         catch (Exception $e) {
             return $this->serializer->getErrorMessage($e->getMessage());
@@ -76,5 +65,45 @@ class Invoker
         }
 
         return $this->serializer->getReplyMessage($ret);
+    }
+
+    public function addCommand($name, $callback)
+    {
+
+    }
+
+    public function renameCommand($oldname, $newname)
+    {
+        if ($oldname === $newname || !isset($this->commands[$oldname])) {
+        }
+        $this->commands[$newname] = $this->commands[$oldname];
+        $this->commandArgs[$newname] = $this->commandArgs[$oldname];
+        unset($this->commandArgs[$oldname], $this->commands[$oldname]);
+
+        if (isset($this->commandType[$oldname])) {
+            $this->commandType[$newname] = $this->commandType[$oldname];
+            unset($this->commandType[$oldname]);
+        }
+    }
+
+    public function addCommands($class)
+    {
+        $ref = new ReflectionClass($class);
+        foreach ($ref->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            /* @var $method ReflectionMethod */
+            $name = $method->getName();
+            $this->commands[$name] = array($class, $name);
+            $this->commandArgs[$name] = $this->getNumberOfArguments($method);
+        }
+
+        foreach (array('ping', 'type') as $command) {
+            $this->commandType[$command] = self::TYPE_STRING_STATUS;
+        }
+
+        foreach(array('set', 'setex', 'psetex', 'mset', 'rename') as $command) {
+            $this->commandType[$command] = self::TYPE_TRUE_STATUS;
+        }
+
+        $this->renameCommand('x_echo', 'echo');
     }
 }
