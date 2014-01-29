@@ -29,7 +29,7 @@ class Invoker
             $this->commandType[$command] = self::TYPE_STRING_STATUS;
         }
 
-        foreach(array('set', 'setex', 'psetex', 'mset', 'rename') as $command) {
+        foreach(array('set', 'setex', 'psetex', 'mset', 'rename', 'client', 'config', 'flushdb', 'flushall', 'auth', 'quit', 'select') as $command) {
             $this->commandType[$command] = self::TYPE_TRUE_STATUS;
         }
     }
