@@ -51,6 +51,7 @@ class Server extends EventEmitter
             $business->addCommands(new Business\Connection($this));
             $business->addCommands(new Business\Keys($db));
             $business->addCommands(new Business\Lists($db));
+            $business->addCommands(new Business\Server($this));
             $business->addCommands(new Business\Strings($db));
             $business->renameCommand('x_echo', 'echo');
         }
@@ -124,5 +125,10 @@ class Server extends EventEmitter
     public function getDatabases()
     {
         return $this->databases;
+    }
+
+    public function getClients()
+    {
+        return $this->clients;
     }
 }
