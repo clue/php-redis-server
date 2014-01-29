@@ -96,6 +96,10 @@ class Invoker
         foreach ($ref->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             /* @var $method ReflectionMethod */
             $name = $method->getName();
+            if (substr($name, 0, 2) === '__') {
+                continue;
+            }
+
             $this->commands[$name] = array($class, $name);
             $this->commandArgs[$name] = $this->getNumberOfArguments($method);
         }
