@@ -66,6 +66,20 @@ class Server
         return true;
     }
 
+    public function shutdown()
+    {
+        // save/nosave doesn't matter
+
+        // this command disconnects all clients and closes the server socket,
+        // so there's no need to return a reply
+
+        foreach ($this->getAllClients() as $client) {
+            $client->close();
+        }
+
+        $this->getServer()->close();
+    }
+
     private function getAllClients()
     {
         return $this->getServer()->getClients();
