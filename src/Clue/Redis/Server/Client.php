@@ -31,7 +31,7 @@ class Client
 
     public function getRemoteAddress()
     {
-        return $this->connection->getRemoteAddress() . ':0';
+        return stream_socket_get_name($this->connection->stream, true);
     }
 
     public function close()
