@@ -5,6 +5,7 @@ namespace Clue\Redis\Server\Business;
 use Clue\Redis\Server\Storage;
 use Exception;
 use InvalidArgumentException;
+use Clue\Redis\Server\Client;
 
 class Keys
 {
@@ -320,5 +321,10 @@ class Keys
             throw new Exception('ERR value is not an integer or out of range');
         }
         return $int;
+    }
+
+    public function setClient(Client $client)
+    {
+        $this->storage = $client->getDatabase();
     }
 }

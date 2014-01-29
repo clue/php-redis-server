@@ -5,6 +5,7 @@ namespace Clue\Redis\Server\Business;
 use Clue\Redis\Server\Storage;
 use Exception;
 use InvalidArgumentException;
+use Clue\Redis\Server\Client;
 
 class Strings
 {
@@ -248,6 +249,11 @@ class Strings
     public function strlen($key)
     {
         return strlen($this->storage->getStringOrNull($key));
+    }
+
+    public function setClient(Client $client)
+    {
+        $this->storage = $client->getDatabase();
     }
 
     private function coerceInteger($value)
