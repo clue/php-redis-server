@@ -48,6 +48,24 @@ class Server
         return $this->getDatabase()->count();
     }
 
+    // StatusReply
+    public function flushdb()
+    {
+        $this->getDatabase()->reset();
+
+        return true;
+    }
+
+    // StatusReply
+    public function flushall()
+    {
+        foreach ($this->getDatabases() as $database) {
+            $database->reset();
+        }
+
+        return true;
+    }
+
     private function getAllClients()
     {
         return $this->getServer()->getClients();
