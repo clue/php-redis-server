@@ -120,4 +120,9 @@ class Server extends EventEmitter
     {
         return stream_socket_get_name($this->socket->master, false);
     }
+
+    public function getDatabases()
+    {
+        return $this->databases;
+    }
 }
