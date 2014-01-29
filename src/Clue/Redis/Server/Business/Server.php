@@ -43,6 +43,11 @@ class Server
         throw new InvalidArgumentException('ERR Syntax error, try CLIENT (LIST | KILL ip:port | GETNAME | SETNAME connection-name)');
     }
 
+    public function dbsize()
+    {
+        return $this->getDatabase()->count();
+    }
+
     private function getAllClients()
     {
         return $this->getServer()->getClients();
