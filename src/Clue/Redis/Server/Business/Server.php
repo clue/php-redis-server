@@ -80,6 +80,14 @@ class Server
         $this->getServer()->close();
     }
 
+    public function time()
+    {
+        $time = array_reverse(explode(' ', microtime(false)));
+        $time[1] = trim($time[1], ".0");
+
+        return $time;
+    }
+
     private function getAllClients()
     {
         return $this->getServer()->getClients();
