@@ -135,6 +135,29 @@ class Client
         return substr($ret, 0, -1);
     }
 
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    public function setName($name)
+    {
+        if (!preg_match('/[a-z]/', $name)) {
+            throw new InvalidArgumentException('ERR Client names cannot contain spaces, newlines or special characters.');
+        }
+        $this->name = $name;
+    }
+
+    public function getDatabase()
+    {
+        return $this->database;
+    }
+
+    public function setDatabase(Storage $database)
+    {
+        $this->database = $database;
+    }
+
     public function handleRequest(Request $request)
     {
         $this->lastRequest = $request;
