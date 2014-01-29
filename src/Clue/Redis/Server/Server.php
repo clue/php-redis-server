@@ -48,7 +48,7 @@ class Server extends EventEmitter
 
         if ($business === null) {
             $business = new Invoker($protocol->createSerializer());
-            $business->addCommands(new Business\Connection());
+            $business->addCommands(new Business\Connection($this));
             $business->addCommands(new Business\Keys($db));
             $business->addCommands(new Business\Lists($db));
             $business->addCommands(new Business\Strings($db));

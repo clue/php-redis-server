@@ -8,7 +8,8 @@ class ConnectionTest extends TestCase
 
     public function setUp()
     {
-        $this->business = new Connection();
+        $server = $this->getMockBuilder('Clue\Redis\Server\Server')->disableOriginalConstructor()->getMock();
+        $this->business = new Connection($server);
     }
 
     public function testPing()
