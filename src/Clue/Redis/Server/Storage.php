@@ -145,6 +145,17 @@ class Storage
         }
     }
 
+    public function reset()
+    {
+        $this->storage = $this->timeout = array();
+    }
+
+    public function count()
+    {
+        $this->removeAllExpired();
+        return count($this->storage);
+    }
+
     private function removeAllExpired()
     {
         if ($this->timeout) {
