@@ -43,6 +43,36 @@ class Server
         throw new InvalidArgumentException('ERR Syntax error, try CLIENT (LIST | KILL ip:port | GETNAME | SETNAME connection-name)');
     }
 
+    // StatusReply
+    public function config($subcommand)
+    {
+        $n = func_num_args();
+        $subcommand = strtolower($subcommand);
+
+        if ($subcommand === 'get') {
+            if ($n !== 2) {
+                throw new InvalidArgumentException('ERR Wrong number of arguments for CONFIG get');
+            }
+            $pattern = func_get_arg(1);
+            $ret = array();
+            foreach ($this->getConfig() as $name => $value) {
+                if (fnmatch($pattern, $name)) {
+                    $ret []= $name;
+                    $ret []= $value;
+                }
+            }
+            return $ret;
+        } elseif ($subcommand === 'set') {
+            if ($n !== 3) {
+                throw new InvalidArgumentException('ERR Wrong number of arguments for CONFIG set');
+            }
+            $this->getConfig()->set(func_get_arg(1), func_get_arg(2));
+            return true;
+        }
+
+        throw new InvalidArgumentException('ERR CONFIG subcommand must be one of GET, SET');
+    }
+
     public function dbsize()
     {
         return $this->getDatabase()->count();
@@ -114,6 +144,11 @@ class Server
             }
         }
         throw new OutOfBoundsException('ERR No such client');
+    }
+
+    private function getConfig()
+    {
+        return $this->server->getConfig();
     }
 
     private function getDatabases()
