@@ -39,7 +39,7 @@ class Invoker
         return $method->getNumberOfRequiredParameters();
     }
 
-    public function invoke(Request $request)
+    public function invoke(Request $request, Client $client)
     {
         $command = strtolower($request->getCommand());
         $args    = $request->getArgs();
@@ -51,6 +51,12 @@ class Invoker
         $n = count($args);
         if ($n < $this->commandArgs[$command]) {
             return $this->serializer->getErrorMessage('ERR wrong number of arguments for \'' . $command . '\' command');
+        }
+
+        // This doesn't even deserve a proper comment…
+        $b = reset($this->commands[$command]);
+        if (is_callable(array($b, 'setClient'))) {
+            $b->setClient($client);
         }
 
         try {
@@ -96,7 +102,7 @@ class Invoker
         foreach ($ref->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
             /* @var $method ReflectionMethod */
             $name = $method->getName();
-            if (substr($name, 0, 2) === '__') {
+            if (substr($name, 0, 2) === '__' || $name === 'setClient') {
                 continue;
             }
 

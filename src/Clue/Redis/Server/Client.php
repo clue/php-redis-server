@@ -163,7 +163,7 @@ class Client
         $this->lastRequest = $request;
         $this->timeLast = microtime(true);
 
-        $ret = $this->business->invoke($request);
+        $ret = $this->business->invoke($request, $this);
         if ($ret !== null) {
             $this->write($ret);
         }
