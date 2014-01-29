@@ -190,6 +190,51 @@ class Lists
         return $ret;
     }
 
+    // MultiBulkReply
+    public function blpop($key0, $timeout)
+    {
+        return $this->bpop('lpop', func_get_args());
+    }
+
+    // MultiBulkReply
+    public function brpop($key0, $timeout)
+    {
+        return $this->bpop('rpop', func_get_args());
+    }
+
+    public function brpoplpush($source, $destination, $timeout)
+    {
+        $that = $this;
+        return $this->brpop($source, $timeout)->then(function ($data) use ($that, $destination) {
+            $that->lpush($destination, $data[1]);
+            return $data[1];
+        });
+    }
+
+    private function bpop($command, $keys)
+    {
+        $timeout = $this->coerceTimeout(array_pop($keys));
+
+        foreach ($keys as $key) {
+            $ret = $this->$command($key);
+            if ($ret !== null) {
+                return array($key, $ret);
+            }
+        }
+
+        if ($timeout !== 0 && !$this->getClient()->inTransaction()) {
+            // else, subscribe to all lists
+            // ret[list, value]
+        }
+
+        return null;
+    }
+
+    private function getClient()
+    {
+
+    }
+    
     public function setClient(Client $client)
     {
         $this->storage = $client->getDatabase();
@@ -202,5 +247,14 @@ class Lists
             throw new Exception('ERR value is not an integer or out of range');
         }
         return $int;
+    }
+
+    private function coerceTimeout($value)
+    {
+        $value = $this->coerceInteger($value);
+        if ($value < 0) {
+            throw new InvalidArgumentException('ERR timeout is negative');
+        }
+        return $value;
     }
 }
