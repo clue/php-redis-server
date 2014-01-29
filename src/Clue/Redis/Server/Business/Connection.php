@@ -36,6 +36,18 @@ class Connection
         return true;
     }
 
+    // StatusReply
+    public function quit()
+    {
+        // this command will end the connection and therefor not send any more
+        // messages (not even the return code). For this reason we have to send
+        // an OK message manually.
+        $this->getClient()->write($this->getSerializer()->getStatusMessage('OK'));
+        $this->getClient()->end();
+
+        return true;
+    }
+
     public function setClient(Client $client)
     {
         $this->client = $client;
@@ -47,6 +59,11 @@ class Connection
             throw new UnexpectedValueException('Invalid state');
         }
         return $this->client;
+    }
+
+    private function getSerializer()
+    {
+        return $this->getClient()->getBusiness()->getSerializer();
     }
 
     private function getServer()
