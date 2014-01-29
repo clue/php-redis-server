@@ -33,6 +33,7 @@ class Server extends EventEmitter
     private $business;
     private $clients;
     private $databases;
+    private $config;
 
     public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, Invoker $business = null)
     {
@@ -61,6 +62,7 @@ class Server extends EventEmitter
         $this->protocol = $protocol;
         $this->business = $business;
         $this->clients = new SplObjectStorage();
+        $this->config = new Config();
 
         $this->on('error', function ($error, Client $client) {
             $client->end();
@@ -130,5 +132,10 @@ class Server extends EventEmitter
     public function getClients()
     {
         return $this->clients;
+    }
+
+    public function getConfig()
+    {
+        return $this->config;
     }
 }
