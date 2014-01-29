@@ -5,6 +5,7 @@ namespace Clue\Redis\Server;
 use React\Socket\Connection;
 use Clue\Redis\Protocol\Model\ModelInterface;
 use Clue\Redis\Protocol\Model\Request;
+use InvalidArgumentException;
 
 class Client
 {
@@ -24,7 +25,7 @@ class Client
         $this->connection = $connection;
         $this->business = $business;
         $this->database = $database;
-        
+
         $this->timeConnect = $this->timeLast = microtime(true);
     }
 
@@ -92,7 +93,7 @@ class Client
 
         $command = 'NULL';
         if ($this->lastRequest !== null) {
-            $command = strtolower($lastRequest->getCommand());
+            $command = strtolower($this->lastRequest->getCommand());
         }
 
         $events = '';
@@ -100,7 +101,7 @@ class Client
             $events = 'r';
         }
         if ($this->isWriting()) {
-            $eventts .= 'w';
+            $events .= 'w';
         }
 
         return array(
@@ -110,7 +111,7 @@ class Client
             'age'       => (int)(microtime(true) - $this->timeConnect),
             'idle'      => (int)(microtime(true) - $this->timeLast),
             'flags'     => $this->getFlags(),
-            'db'        => $this->database,
+            'db'        => $this->database->getId(),
             'sub'       => 0,
             'psub'      => 0,
             'multi'     => $this->multi,
