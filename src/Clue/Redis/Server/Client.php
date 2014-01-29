@@ -158,6 +158,16 @@ class Client
         $this->database = $database;
     }
 
+    public function getBusiness()
+    {
+        return $this->business;
+    }
+
+    public function setBusiness(Invoker $business)
+    {
+        return $this->business;
+    }
+
     public function handleRequest(Request $request)
     {
         $this->lastRequest = $request;

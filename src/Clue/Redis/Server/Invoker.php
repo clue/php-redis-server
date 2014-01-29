@@ -13,6 +13,7 @@ use Clue\Redis\Protocol\Model\Request;
 
 class Invoker
 {
+    private $serializer;
     private $commands    = array();
     private $commandArgs = array();
     private $commandType = array();
@@ -75,6 +76,11 @@ class Invoker
         }
 
         return $this->serializer->getReplyMessage($ret);
+    }
+
+    public function getSerializer()
+    {
+        return $this->serializer;
     }
 
     public function addCommand($name, $callback)
