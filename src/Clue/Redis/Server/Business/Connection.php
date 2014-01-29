@@ -17,6 +17,23 @@ class Connection
         $this->server = $server;
     }
 
+    // StatusReply
+    public function auth($password)
+    {
+        if (!$this->getConfig()->has('requirepass')) {
+            throw new UnexpectedValueException('ERR Client sent AUTH, but no password is set');
+        }
+
+        if ($this->getConfig()->get('requirepass') !== $password) {
+            throw new UnexpectedValueException('ERR invalid password');
+        }
+
+        return true;
+
+        // from invoker, after checking number of args:
+        throw new UnexpectedValueException('ERR operation not permitted');
+    }
+
     public function x_echo($message)
     {
         return $message;
