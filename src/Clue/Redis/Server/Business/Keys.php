@@ -190,7 +190,7 @@ class Keys
 
     public function expire($key, $seconds)
     {
-        return $this->pexpireat($key, 1000 * (microtime(true) + $this->coerceInteger($seconds)));
+        return $this->pexpireat($key, (int)(1000 * (microtime(true) + $this->coerceInteger($seconds))));
     }
 
     public function expireat($key, $timestamp)
@@ -200,7 +200,7 @@ class Keys
 
     public function pexpire($key, $milliseconds)
     {
-        return $this->pexpireat($key, (1000 * microtime(true)) + $this->coerceInteger($milliseconds));
+        return $this->pexpireat($key, (int)(1000 * microtime(true)) + $this->coerceInteger($milliseconds));
     }
 
     public function pexpireat($key, $millisecondTimestamp)
