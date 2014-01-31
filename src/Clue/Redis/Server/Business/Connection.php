@@ -6,6 +6,7 @@ use Clue\Redis\Server\Server;
 use OutOfBoundsException;
 use UnexpectedValueException;
 use Clue\Redis\Server\Client;
+use Clue\Redis\Server\AuthInvoker;
 
 class Connection
 {
@@ -20,7 +21,7 @@ class Connection
     // StatusReply
     public function auth($password)
     {
-        if (!$this->getConfig()->has('requirepass')) {
+        if ($this->getConfig()->get('requirepass') === '') {
             throw new UnexpectedValueException('ERR Client sent AUTH, but no password is set');
         }
 
@@ -28,10 +29,12 @@ class Connection
             throw new UnexpectedValueException('ERR invalid password');
         }
 
-        return true;
+        $business = $this->getClient()->getBusiness();
+        if ($business instanceof AuthInvoker) {
+            $this->getClient()->setBusiness($business->getSuccessfulInvoker());
+        }
 
-        // from invoker, after checking number of args:
-        throw new UnexpectedValueException('ERR operation not permitted');
+        return true;
     }
 
     public function x_echo($message)
@@ -101,5 +104,10 @@ class Connection
             }
         }
         throw new OutOfBoundsException('ERR invalid DB index');
+    }
+
+    private function getConfig()
+    {
+        return $this->server->getConfig();
     }
 }
