@@ -9,6 +9,18 @@ class Storage
     private $storage = array();
     private $timeout = array();
 
+    private $id;
+
+    public function __construct($id = '0')
+    {
+        $this->id = $id;
+    }
+
+    public function getId()
+    {
+        return $this->id;
+    }
+
     public function unsetKey($key)
     {
         unset($this->storage[$key], $this->timeout[$key]);
@@ -72,7 +84,7 @@ class Storage
     {
         if ($this->hasKey($key)) {
             if (!($this->storage[$key] instanceof SplDoublyLinkedList)) {
-                throw new InvalidDatatypeException();
+                throw new InvalidDatatypeException('WRONGTYPE Operation against a key holding the wrong kind of value');
             }
             return $this->storage[$key];
         }
@@ -131,6 +143,17 @@ class Storage
         } else {
             $this->timeout[$key] = $timestamp;
         }
+    }
+
+    public function reset()
+    {
+        $this->storage = $this->timeout = array();
+    }
+
+    public function count()
+    {
+        $this->removeAllExpired();
+        return count($this->storage);
     }
 
     private function removeAllExpired()

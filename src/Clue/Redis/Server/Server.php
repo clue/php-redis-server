@@ -17,6 +17,7 @@ use Clue\Redis\Protocol\Model\Request;
 use ReflectionMethod;
 use ReflectionException;
 use Clue\Redis\Protocol\Parser\RequestParser;
+use Clue\Redis\Server\Business;
 
 /**
  * Dummy redis server implementation
@@ -31,19 +32,29 @@ class Server extends EventEmitter
     private $protocol;
     private $business;
     private $clients;
+    private $databases;
+    private $config;
 
-    public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, $business = null)
+    public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, Invoker $business = null)
     {
         if ($protocol === null) {
             $protocol = new ProtocolFactory();
         }
 
-        if ($business === null) {
-            $business = new Business();
-        }
+        $this->databases = array(
+            new Storage('0'),
+            new Storage('1'),
+        );
+        $db = reset($this->databases);
 
-        if (!($business instanceof Invoker)) {
-            $business = new Invoker($business, $protocol->createSerializer());
+        if ($business === null) {
+            $business = new Invoker($protocol->createSerializer());
+            $business->addCommands(new Business\Connection($this));
+            $business->addCommands(new Business\Keys($db));
+            $business->addCommands(new Business\Lists($db));
+            $business->addCommands(new Business\Server($this));
+            $business->addCommands(new Business\Strings($db));
+            $business->renameCommand('x_echo', 'echo');
         }
 
         $this->socket = $socket;
@@ -51,6 +62,7 @@ class Server extends EventEmitter
         $this->protocol = $protocol;
         $this->business = $business;
         $this->clients = new SplObjectStorage();
+        $this->config = new Config();
 
         $this->on('error', function ($error, Client $client) {
             $client->end();
@@ -65,7 +77,12 @@ class Server extends EventEmitter
         $parser = new RequestParser();
         $that = $this;
 
-        $client = new Client($connection);
+        $business = $this->business;
+        if ($this->config->get('requirepass') !== '') {
+            $business = new AuthInvoker($business);
+        }
+
+        $client = new Client($connection, $business, reset($this->databases));
         $this->clients->attach($client);
 
         $connection->on('data', function ($data) use ($parser, $that, $client) {
@@ -99,10 +116,7 @@ class Server extends EventEmitter
     {
         $this->emit('request', array($request, $client));
 
-        $ret = $this->business->invoke($request);
-        if ($ret !== null) {
-            $client->write($ret);
-        }
+        $client->handleRequest($request);
     }
 
     public function close()
@@ -113,5 +127,20 @@ class Server extends EventEmitter
     public function getLocalAddress()
     {
         return stream_socket_get_name($this->socket->master, false);
+    }
+
+    public function getDatabases()
+    {
+        return $this->databases;
+    }
+
+    public function getClients()
+    {
+        return $this->clients;
+    }
+
+    public function getConfig()
+    {
+        return $this->config;
     }
 }

@@ -13,30 +13,24 @@ use Clue\Redis\Protocol\Model\Request;
 
 class Invoker
 {
-    private $business;
-    private $commands = array();
+    private $serializer;
+    private $commands    = array();
+    private $commandArgs = array();
     private $commandType = array();
 
     const TYPE_AUTO = 0;
     const TYPE_STRING_STATUS = 1;
     const TYPE_TRUE_STATUS = 2;
 
-    public function __construct($business, SerializerInterface $serializer)
+    public function __construct(SerializerInterface $serializer)
     {
-        $this->business = $business;
         $this->serializer = $serializer;
-
-        $ref = new ReflectionClass($business);
-        foreach ($ref->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            /* @var $method ReflectionMethod */
-            $this->commands[$method->getName()] = $this->getNumberOfArguments($method);
-        }
 
         foreach (array('ping', 'type') as $command) {
             $this->commandType[$command] = self::TYPE_STRING_STATUS;
         }
 
-        foreach(array('set', 'setex', 'psetex', 'mset', 'rename') as $command) {
+        foreach(array('set', 'setex', 'psetex', 'mset', 'rename', 'client', 'config', 'flushdb', 'flushall', 'auth', 'quit', 'select') as $command) {
             $this->commandType[$command] = self::TYPE_TRUE_STATUS;
         }
     }
@@ -46,7 +40,7 @@ class Invoker
         return $method->getNumberOfRequiredParameters();
     }
 
-    public function invoke(Request $request)
+    public function invoke(Request $request, Client $client)
     {
         $command = strtolower($request->getCommand());
         $args    = $request->getArgs();
@@ -56,12 +50,18 @@ class Invoker
         }
 
         $n = count($args);
-        if ($n < $this->commands[$command]) {
+        if ($n < $this->commandArgs[$command]) {
             return $this->serializer->getErrorMessage('ERR wrong number of arguments for \'' . $command . '\' command');
         }
 
+        // This doesn't even deserve a proper comment…
+        $b = reset($this->commands[$command]);
+        if (is_callable(array($b, 'setClient'))) {
+            $b->setClient($client);
+        }
+
         try {
-            $ret = call_user_func_array(array($this->business, $command), $args);
+            $ret = call_user_func_array($this->commands[$command], $args);
         }
         catch (Exception $e) {
             return $this->serializer->getErrorMessage($e->getMessage());
@@ -76,5 +76,44 @@ class Invoker
         }
 
         return $this->serializer->getReplyMessage($ret);
+    }
+
+    public function getSerializer()
+    {
+        return $this->serializer;
+    }
+
+    public function addCommand($name, $callback)
+    {
+
+    }
+
+    public function renameCommand($oldname, $newname)
+    {
+        if ($oldname === $newname || !isset($this->commands[$oldname])) {
+        }
+        $this->commands[$newname] = $this->commands[$oldname];
+        $this->commandArgs[$newname] = $this->commandArgs[$oldname];
+        unset($this->commandArgs[$oldname], $this->commands[$oldname]);
+
+        if (isset($this->commandType[$oldname])) {
+            $this->commandType[$newname] = $this->commandType[$oldname];
+            unset($this->commandType[$oldname]);
+        }
+    }
+
+    public function addCommands($class)
+    {
+        $ref = new ReflectionClass($class);
+        foreach ($ref->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            /* @var $method ReflectionMethod */
+            $name = $method->getName();
+            if (substr($name, 0, 2) === '__' || $name === 'setClient') {
+                continue;
+            }
+
+            $this->commands[$name] = array($class, $name);
+            $this->commandArgs[$name] = $this->getNumberOfArguments($method);
+        }
     }
 }
