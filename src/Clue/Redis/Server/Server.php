@@ -33,6 +33,7 @@ class Server extends EventEmitter
     private $business;
     private $clients;
     private $databases;
+    private $config;
 
     public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, Invoker $business = null)
     {
@@ -51,6 +52,7 @@ class Server extends EventEmitter
             $business->addCommands(new Business\Connection($this));
             $business->addCommands(new Business\Keys($db));
             $business->addCommands(new Business\Lists($db));
+            $business->addCommands(new Business\Server($this));
             $business->addCommands(new Business\Strings($db));
             $business->renameCommand('x_echo', 'echo');
         }
@@ -60,6 +62,7 @@ class Server extends EventEmitter
         $this->protocol = $protocol;
         $this->business = $business;
         $this->clients = new SplObjectStorage();
+        $this->config = new Config();
 
         $this->on('error', function ($error, Client $client) {
             $client->end();
@@ -124,5 +127,15 @@ class Server extends EventEmitter
     public function getDatabases()
     {
         return $this->databases;
+    }
+
+    public function getClients()
+    {
+        return $this->clients;
+    }
+
+    public function getConfig()
+    {
+        return $this->config;
     }
 }
