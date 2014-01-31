@@ -81,6 +81,20 @@ So far, the following list of commands shows what's already implemented:
 * Connection
   * ECHO
   * PING
+  * QUIT
+  * SELECT
+* Server
+  * CLIENT KILL
+  * CLIENT LIST
+  * CLIENT GETNAME
+  * CLIENT SETNAME
+  * CONFIG GET
+  * CONFIG SET
+  * DBSIZE
+  * FLUSHALL
+  * FLUSHDB
+  * SHUTDOWN
+  * TIME
   
 For details, refer to the excellent official documentation of
 [redis commands](http://redis.io/commands).
