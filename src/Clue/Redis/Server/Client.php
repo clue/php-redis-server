@@ -165,7 +165,7 @@ class Client
 
     public function setBusiness(Invoker $business)
     {
-        return $this->business;
+        $this->business = $business;
     }
 
     public function handleRequest(Request $request)
