@@ -77,7 +77,12 @@ class Server extends EventEmitter
         $parser = new RequestParser();
         $that = $this;
 
-        $client = new Client($connection, $this->business, reset($this->databases));
+        $business = $this->business;
+        if ($this->config->get('requirepass') !== '') {
+            $business = new AuthInvoker($business);
+        }
+
+        $client = new Client($connection, $business, reset($this->databases));
         $this->clients->attach($client);
 
         $connection->on('data', function ($data) use ($parser, $that, $client) {
