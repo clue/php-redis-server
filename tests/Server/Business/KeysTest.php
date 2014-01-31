@@ -32,6 +32,93 @@ class KeysTest extends TestCase
         $this->assertEquals(array(), $this->business->keys('[*{?\\'));
     }
 
+    public function testExpiry()
+    {
+        $this->assertEquals(-2, $this->business->ttl('key'));
+        $this->assertEquals(-2, $this->business->pttl('key'));
+
+        $this->assertFalse($this->business->pexpire('key', '1000'));
+        $this->assertFalse($this->business->persist('key'));
+
+        $this->storage->setString('key', 'value');
+
+        $this->assertEquals(-1, $this->business->ttl('key'));
+        $this->assertEquals(-1, $this->business->pttl('key'));
+        $this->assertFalse($this->business->persist('key'));
+
+        $this->assertTrue($this->business->expire('key', '10'));
+
+        $this->assertLessThan(10, $this->business->ttl('key'));
+        $this->assertLessThan(10000, $this->business->pttl('key'));
+
+        $this->assertTrue($this->business->persist('key'));
+        $this->assertEquals(-1, $this->business->ttl('key'));
+    }
+
+    public function testRename()
+    {
+        $this->storage->setString('key', 'value');
+
+        $this->assertTrue($this->business->rename('key', 'new'));
+
+        $this->assertTrue($this->business->exists('new'));
+        $this->assertFalse($this->business->exists('key'));
+    }
+
+    /**
+     * @expectedException Exception
+     */
+    public function testRenameNonExistant()
+    {
+        $this->business->rename('invalid', 'new');
+    }
+
+    /**
+     * @expectedException Exception
+     */
+    public function testRenameSelf()
+    {
+        $this->storage->setString('key', 'value');
+        $this->business->rename('key', 'key');
+    }
+
+    public function testRenameOverwrite()
+    {
+        $this->storage->setString('a', 'a');
+
+        $this->storage->setString('target', 'b');
+        $this->storage->setTimeout('target', microtime(true) + 10);
+
+        $this->assertTrue($this->business->rename('a', 'target'));
+        $this->assertTrue($this->business->exists('target'));
+        $this->assertFalse($this->business->exists('a'));
+
+        $this->assertEquals(-1, $this->business->ttl('target'));
+    }
+
+    public function testRenameNx()
+    {
+        $this->storage->setString('a', 'a');
+
+        $this->assertTrue($this->business->renamenx('a', 'b'));
+
+        $this->storage->setString('c', 'c');
+
+        $this->assertFalse($this->business->renamenx('b', 'c'));
+    }
+
+    public function testType()
+    {
+        $this->assertEquals('none', $this->business->type('nothing'));
+
+        $this->storage->setString('key', 'value');
+        $this->assertEquals('string', $this->business->type('key'));
+
+        $list = $this->storage->getOrCreateList('list');
+        $list->push('value');
+        $this->assertEquals('list', $this->business->type('list'));
+    }
+
     public function testRandomkey()
     {
         $this->assertNull($this->business->randomkey());
