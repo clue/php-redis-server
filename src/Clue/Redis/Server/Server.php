@@ -3,10 +3,10 @@
 namespace Clue\Redis\Server;
 
 use Evenement\EventEmitter;
-use React\Socket\Server as ServerSocket;
+use React\Socket\ServerInterface;
 use React\EventLoop\LoopInterface;
 use Clue\Redis\Protocol\Factory as ProtocolFactory;
-use React\Socket\Connection;
+use React\Socket\ConnectionInterface;
 use Clue\Redis\Protocol\Model\ErrorReply;
 use Clue\Redis\Protocol\Model\ModelInterface;
 use Clue\Redis\Protocol\Model\MultiBulkReply;
@@ -35,7 +35,7 @@ class Server extends EventEmitter
     private $databases;
     private $config;
 
-    public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, Invoker $business = null)
+    public function __construct(ServerInterface $socket, LoopInterface $loop, ProtocolFactory $protocol = null, Invoker $business = null)
     {
         if ($protocol === null) {
             $protocol = new ProtocolFactory();
@@ -71,7 +71,7 @@ class Server extends EventEmitter
         $socket->on('connection', array($this, 'handleConnection'));
     }
 
-    public function handleConnection(Connection $connection)
+    public function handleConnection(ConnectionInterface $connection)
     {
         $parser = $this->protocol->createResponseParser();
         $parser = new RequestParser();
@@ -126,7 +126,10 @@ class Server extends EventEmitter
 
     public function getLocalAddress()
     {
-        return stream_socket_get_name($this->socket->master, false);
+        if (isset($this->socket->master)) {
+            return stream_socket_get_name($this->socket->master, false);
+        }
+        return $this->socket->getPort();
     }
 
     public function getDatabases()
