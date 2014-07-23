@@ -1,4 +1,4 @@
-# clue/redis-server [![Build Status](https://travis-ci.org/clue/redis-server.png?branch=master)](https://travis-ci.org/clue/redis-server)
+# clue/redis-server [![Build Status](https://travis-ci.org/clue/php-redis-server.svg?branch=master)](https://travis-ci.org/clue/php-redis-server)
 
 A redis server implementation in pure PHP. *Not for the faint-hearted.*
 

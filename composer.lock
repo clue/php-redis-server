@@ -1,9 +1,10 @@
 {
     "_readme": [
         "This file locks the dependencies of your project to a known state",
-        "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
+        "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
     ],
-    "hash": "837a39e7a0b5e8f301c26d3754d1fb4b",
+    "hash": "c470c376a400a0c6130baaaf062d3a23",
     "packages": [
         {
             "name": "clue/redis-protocol",
