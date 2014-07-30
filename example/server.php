@@ -16,7 +16,7 @@ if (isset($argv[2]) && $argv[1] === '--port') {
     $port = (int)$argv[2];
 }
 
-$address = '127.0.0.1:' . $port;
+$address = '0.0.0.0:' . $port;
 $debug = false;
 
 $factory->createServer($address)->then(function(Server $server) use ($address, $debug) {
