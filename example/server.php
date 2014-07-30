@@ -11,7 +11,7 @@ $loop = React\EventLoop\Factory::create();
 $factory = new Factory($loop);
 
 // read port definition from command args
-$port = 1337;
+$port = 6379;
 if (isset($argv[2]) && $argv[1] === '--port') {
     $port = (int)$argv[2];
 }
