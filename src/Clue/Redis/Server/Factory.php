@@ -3,7 +3,7 @@
 namespace Clue\Redis\Server;
 
 use React\Socket\Server as ServerSocket;
-use React\Promise\When;
+use React\Promise\Deferred;
 use React\EventLoop\LoopInterface;
 use React\SocketClient\ConnectorInterface;
 use React\Stream\Stream;
@@ -33,15 +33,18 @@ class Factory
     {
         $parts = $this->parseUrl($address);
 
+        $deferred = new Deferred();
+
         $socket = new ServerSocket($this->loop);
         try {
             $socket->listen($parts['port'], $parts['host']);
+            $deferred->resolve(new Server($socket, $this->loop, $this->protocol));
         }
         catch (Exception $e) {
-            return When::reject($e);
+            $deferred->reject($e);
         }
 
-        return When::resolve(new Server($socket, $this->loop, $this->protocol));
+        return $deferred->promise();
     }
 
     private function parseUrl($target)
