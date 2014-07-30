@@ -10,7 +10,13 @@ require __DIR__ . '/../vendor/autoload.php';
 $loop = React\EventLoop\Factory::create();
 $factory = new Factory($loop);
 
-$address = '127.0.0.1:1337';
+// read port definition from command args
+$port = 1337;
+if (isset($argv[2]) && $argv[1] === '--port') {
+    $port = (int)$argv[2];
+}
+
+$address = '127.0.0.1:' . $port;
 $debug = false;
 
 $factory->createServer($address)->then(function(Server $server) use ($address, $debug) {
