@@ -45,6 +45,8 @@ $factory->createServer($address)->then(function(Server $server) use ($address, $
     } else {
         echo 'Debugging is turned off, so you should not see any further output' . PHP_EOL;
     }
+}, function ($e) {
+    fwrite(STDERR, 'ERROR: Unable to start listening server: ' . $e->getMessage() . PHP_EOL);
 });
 
 $loop->run();
