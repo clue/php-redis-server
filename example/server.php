@@ -10,7 +10,13 @@ require __DIR__ . '/../vendor/autoload.php';
 $loop = React\EventLoop\Factory::create();
 $factory = new Factory($loop);
 
-$address = '127.0.0.1:1337';
+// read port definition from command args
+$port = 6379;
+if (isset($argv[2]) && $argv[1] === '--port') {
+    $port = (int)$argv[2];
+}
+
+$address = '0.0.0.0:' . $port;
 $debug = false;
 
 $factory->createServer($address)->then(function(Server $server) use ($address, $debug) {
@@ -39,6 +45,8 @@ $factory->createServer($address)->then(function(Server $server) use ($address, $
     } else {
         echo 'Debugging is turned off, so you should not see any further output' . PHP_EOL;
     }
+}, function ($e) {
+    fwrite(STDERR, 'ERROR: Unable to start listening server: ' . $e->getMessage() . PHP_EOL);
 });
 
 $loop->run();
