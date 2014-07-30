@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "d241e19ac3c29191a8f68595745b04e7",
+    "hash": "5d979baada8594672599b2e34db2fc5b",
     "packages": [
         {
             "name": "clue/redis-protocol",
@@ -89,89 +89,6 @@
                 "event-dispatcher"
             ],
             "time": "2012-05-30 15:01:08"
-        },
-        {
-            "name": "react/cache",
-            "version": "v0.3.2",
-            "target-dir": "React/Cache",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/reactphp/cache.git",
-                "reference": "437357102effb562b44dbc0ac4eb2c209c4f572b"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/reactphp/cache/zipball/437357102effb562b44dbc0ac4eb2c209c4f572b",
-                "reference": "437357102effb562b44dbc0ac4eb2c209c4f572b",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.2",
-                "react/promise": "~1.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "0.3-dev"
-                }
-            },
-            "autoload": {
-                "psr-0": {
-                    "React\\Cache": ""
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "Async caching.",
-            "keywords": [
-                "cache"
-            ],
-            "time": "2013-04-24 08:33:43"
-        },
-        {
-            "name": "react/dns",
-            "version": "v0.3.2",
-            "target-dir": "React/Dns",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/reactphp/dns.git",
-                "reference": "518e12e12f0a86e63ba482ebd728408391cc883f"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/reactphp/dns/zipball/518e12e12f0a86e63ba482ebd728408391cc883f",
-                "reference": "518e12e12f0a86e63ba482ebd728408391cc883f",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.2",
-                "react/cache": "0.3.*",
-                "react/promise": "~1.0",
-                "react/socket": "0.3.*"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "0.3-dev"
-                }
-            },
-            "autoload": {
-                "psr-0": {
-                    "React\\Dns": ""
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "Async DNS resolver.",
-            "keywords": [
-                "dns",
-                "dns-resolver"
-            ],
-            "time": "2013-04-27 08:57:30"
         },
         {
             "name": "react/event-loop",
@@ -300,48 +217,6 @@
                 "Socket"
             ],
             "time": "2014-02-17 22:32:00"
-        },
-        {
-            "name": "react/socket-client",
-            "version": "v0.3.1",
-            "target-dir": "React/SocketClient",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/reactphp/socket-client.git",
-                "reference": "87935a0223362c36cd30cf215cbec33377d31ca4"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/reactphp/socket-client/zipball/87935a0223362c36cd30cf215cbec33377d31ca4",
-                "reference": "87935a0223362c36cd30cf215cbec33377d31ca4",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.3",
-                "react/dns": "0.3.*",
-                "react/event-loop": "0.3.*",
-                "react/promise": "~1.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "0.3-dev"
-                }
-            },
-            "autoload": {
-                "psr-0": {
-                    "React\\SocketClient": ""
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "Async connector to open TCP/IP and SSL/TLS based connections.",
-            "keywords": [
-                "Socket"
-            ],
-            "time": "2013-04-20 14:55:59"
         },
         {
             "name": "react/stream",

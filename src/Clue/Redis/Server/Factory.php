@@ -5,8 +5,6 @@ namespace Clue\Redis\Server;
 use React\Socket\Server as ServerSocket;
 use React\Promise\Deferred;
 use React\EventLoop\LoopInterface;
-use React\SocketClient\ConnectorInterface;
-use React\Stream\Stream;
 use Clue\Redis\Server\Server;
 use Clue\Redis\Protocol\Factory as ProtocolFactory;
 use InvalidArgumentException;
