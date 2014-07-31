@@ -192,6 +192,15 @@ $ curl -s https://getcomposer.org/installer | php
 $ php composer.phar install
 ```
 
+## Docker
+
+This project is also available as a [docker](https://www.docker.com/) image.
+Using the [clue/php-redis-server](https://registry.hub.docker.com/u/clue/php-redis-server/) image is as easy as running this:
+
+```php
+$ docker run -d clue/php-redis-server
+```
+
 ## License
 
 MIT
