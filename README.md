@@ -1,34 +1,33 @@
 # clue/redis-server [![Build Status](https://travis-ci.org/clue/php-redis-server.svg?branch=master)](https://travis-ci.org/clue/php-redis-server)
 
-A redis server implementation in pure PHP. *Not for the faint-hearted.*
+A Redis server implementation in pure PHP. *Not for the faint-hearted.*
 
 > Note: This project is in early alpha stage! Feel free to report any issues you encounter.
 
 ## Introduction
 
-
 ### Motivation
 
-This project aims to provide a simple alternative to the official redis server
+[Redis](http://redis.io/) is a fast in-memory key-value database.
+This project aims to provide a simple alternative to the official Redis server
 implementation if installing it is not an option.
 
-Why would I use this project if I already have the official redis server
+Why would I use this project if I already have the official Redis server
 installed? Simply put, you wouldn't. Ever.
 
 ### Project goals
 
-* ✓ Implement an in-memory datastore using the redis protocol
-* ✓ Compatiblity with common redis clients
+* ✓ Implement an in-memory datastore using the Redis protocol
+* ✓ Compatiblity with common Redis clients and tools
   * ✓ redis-cli
   * ✓ redis-benchmark
 * ✓ SOLID and modern design, tested and modular components
 * ✗ Implement *all* commands (see below for list of supported commands)
-* ✗ Compatibility with common tools resque(-php) etc.
 
 ### Supported commands
 
 Eventually, this project aims to replicate *all* commands of
-the [official redis server](http://redis.io/) implementation and their exact
+the [official Redis server](http://redis.io/) implementation and their exact
 behavior.
 
 So far, the following list of commands shows what's already implemented:
@@ -98,21 +97,21 @@ So far, the following list of commands shows what's already implemented:
   * TIME
   
 For details, refer to the excellent official documentation of
-[redis commands](http://redis.io/commands).
+[Redis commands](http://redis.io/commands).
 
 All available commands are expected to behave just like their counterparts in
-redis v2.6, unless otherwise noted. If you find a command to misbehave, don't
+Redis v2.6+, unless otherwise noted. If you find a command to misbehave, don't
 hesitate to file a bug.
 
 Obviously, this list is incomplete in that it does not include *every* command
-supported by redis. If you find a command is missing, please submit a PR :)
+supported by Redis. If you find a command is missing, please submit a PR :)
 
 ### Benchmarking performance
 
 > As usual, just about *every* benchmark is biased - you've been warned.
 
 You can use the `redis-benchmark` script that is included when installing the
-official redis server.
+official Redis server.
 
 ```bash
 $ redis-benchmark -p 1337 -q
@@ -154,7 +153,7 @@ performance:
   Disabled debugging output significantly improves performance (3x)
 - The benchmark should not be run from within a virtual machine. Running this on
   the host machine instead shows significant improvements (8x). For comparision,
-  the same applies to official redis, although it shows a smaller impact (3x).
+  the same applies to official Redis, although it shows a smaller impact (3x).
 
 ## Quickstart example
 
@@ -168,8 +167,7 @@ Alternatively, you can also use this project as a lib in order to build your
 own server like this:
 
 ```php
-
-$factory = new Factory($loop, $connector);
+$factory = new Factory($loop);
 $factory->createServer('localhost:1337')->then(function (Server $server) use ($loop) {
     $server->on('connection', function(Client $client) {
         echo $client->getRemoteAddr() .' connected' . PHP_EOL;    
@@ -186,8 +184,8 @@ its dependencies [through composer](http://getcomposer.org). [New to composer?](
 
 ```bash
 $ sudo apt-get install php5-cli git curl
-$ git clone https://github.com/clue/redis-server.git
-$ cd redis-server/
+$ git clone https://github.com/clue/php-redis-server.git
+$ cd php-redis-server/
 $ curl -s https://getcomposer.org/installer | php
 $ php composer.phar install
 ```
@@ -204,4 +202,3 @@ $ docker run -d clue/php-redis-server
 ## License
 
 MIT
-
