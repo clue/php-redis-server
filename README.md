@@ -127,13 +127,13 @@ SET: 121951.22 requests per second
 GET: 151515.16 requests per second
 
 # clue/redis-server PHP 5.5
-$ php example/server.php
+$ php bin/redis-server.php
 $ redis-benchmark -t set,get -p 1337 -q
 SET: 18761.73 requests per second
 GET: 22172.95 requests per second
 
 # clue/redis-server HHVM
-$ hhvm -vEval.Jit=true example/server.php
+$ hhvm -vEval.Jit=true bin/redis-server.php
 $ redis-benchmark -t set,get -p 1337 -q
 SET: 49019.61 requests per second
 GET: 57142.86 requests per second
@@ -149,7 +149,7 @@ performance:
   This is not a hard requirement, but `redis-benchmark` defaults to 50
   concurrent connections which slows down the whole server process due to
   relying on a `stream_select()` call otherwise.
-- The `example/server.php` includes a `$debug` flag (which defaults to `false`).
+- The `bin/redis-server.php` includes a `$debug` flag (which defaults to `false`).
   Disabled debugging output significantly improves performance (3x)
 - The benchmark should not be run from within a virtual machine. Running this on
   the host machine instead shows significant improvements (8x). For comparision,
@@ -157,10 +157,11 @@ performance:
 
 ## Quickstart example
 
-Once [installed](#install), you can run any of the examples provided:
+Once [installed](#install), you can start the Redis server by running the provided
+bin file:
 
 ```bash
-php example/server.php
+$ php bin/redis-server.php
 ```
 
 Alternatively, you can also use this project as a lib in order to build your
@@ -195,7 +196,7 @@ $ php composer.phar install
 This project is also available as a [docker](https://www.docker.com/) image.
 Using the [clue/php-redis-server](https://registry.hub.docker.com/u/clue/php-redis-server/) image is as easy as running this:
 
-```php
+```bash
 $ docker run -d clue/php-redis-server
 ```
 

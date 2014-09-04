@@ -42,6 +42,9 @@ you spot any mistakes.
 
 * Feature: Support binding to random port when passing `0` port
 
+* Feature: New bin file `bin/redis-server.php`
+  (#9)
+
 * Feature: Refactor to support database per user (SELECT command)
 
 * Feature: Significant performance improvement for list operations by using `SplDoublyLinkedList` internally

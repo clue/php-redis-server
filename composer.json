@@ -20,5 +20,8 @@
     },
     "autoload": {
         "psr-4": { "Clue\\Redis\\Server\\": "src" }
-    }
+    },
+    "bin": [
+        "bin/redis-server.php"
+    ]
 }
