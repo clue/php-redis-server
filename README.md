@@ -140,6 +140,57 @@ performance:
   the host machine instead shows significant improvements (8x). For comparision,
   the same applies to official redis, although it shows a smaller impact (3x).
 
+#### Benchmarking performance on AWS
+
+Some facts about the machine:
+
+* Instance Type: [c4.xlarge](https://aws.amazon.com/ec2/instance-types/?nc1=h_ls#compute-optimized) (16 ECUs, 4 vCPUs, 2.9 GHz, Intel Xeon E5-2666v3, 7.5 GiB memory, EBS only, compute optimized)
+* Availability Zone: eu-central-1b (Frankfurt, Germany)
+* AMI: Ubuntu Server 14.04 LTS (HVM), SSD Volume Type - ami-87564feb
+
+Some benchmarking results:
+
+```
+# Official redis-server
+# 	redis_version:2.8.4
+# 	redis_build_id:a44a05d76f06a5d9
+# 	redis_mode:standalone
+# 	os:Linux 3.13.0-74-generic x86_64
+# 	arch_bits:64
+# 	gcc_version:4.8.2
+# 	mem_allocator:jemalloc-3.4.1
+$ redis-server
+$ redis-benchmark -t set,get -q
+SET: 181818.19 requests per second
+GET: 185185.19 requests per second
+
+# clue/redis-server
+#	PHP 7.0.2-4+deb.sury.org~trusty+1 (cli) ( NTS )
+#	Copyright (c) 1997-2015 The PHP Group
+#	Zend Engine v3.0.0, Copyright (c) 1998-2015 Zend Technologies
+#	    with Zend OPcache v7.0.6-dev, Copyright (c) 1999-2015, by Zend Technologies
+$ php bin/redis-server.php
+$ redis-benchmark -t set,get -q
+SET: 78125.00 requests per second
+GET: 75187.97 requests per second
+
+# clue/redis-server
+# 	HipHop VM 3.11.0 (rel)
+#	Compiler: tags/HHVM-3.11.0-0-g3dd564a8cde23e3205a29720d3435c771274085e
+#	Repo schema: 52047bdda550f21c2ec2fcc295e0e6d02407be51
+$ hhvm -vEval.Jit=true bin/redis-server.php
+$ redis-benchmark -t set,get -q
+SET: 70921.98 requests per second
+GET: 71942.45 requests per second
+```
+
+Some notes about the benchmark:
+
+* Date of benchmark: 2016-01-22, ~9pm
+* The instance was running on a shared instance. There might be more performance on a [dedicated instance](https://aws.amazon.com/ec2/purchasing-options/dedicated-instances/) or even on a [dedicated host](https://aws.amazon.com/ec2/dedicated-hosts/).
+* PHP7 was not self-compiled. The precompiled version by [Ondřej Surý](https://github.com/oerdnj) was used. There might be more performance available by a custom compiled PHP version.
+* The PHP-Extension [libevent](https://pecl.php.net/package/libevent) was not available for PHP 7 at the time of the benchmark.
+
 ## Quickstart example
 
 Once [installed](#install), you can run any of the examples provided:
