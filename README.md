@@ -96,11 +96,10 @@ supported by redis. If you find a command is missing, please submit a PR :)
 
 > As usual, just about *every* benchmark is biased - you've been warned.
 
-You can use the `redis-benchmark` script that is included when installing the
-official redis server.
+We used the [official benchmark tool](http://redis.io/topics/benchmarks) `redis-benchmark` script that is included when installing the official redis server.
 
 ```bash
-$ redis-benchmark -p 1337 -q
+$ redis-benchmark -t set,get -q
 ```
 
 Some benchmarking results:
