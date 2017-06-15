@@ -2,8 +2,6 @@
 
 namespace Clue\Redis\Server;
 
-use SplDoublyLinkedList;
-
 class Storage
 {
     private $storage = array();
@@ -83,14 +81,14 @@ class Storage
     public function getOrCreateList($key)
     {
         if ($this->hasKey($key)) {
-            if (!($this->storage[$key] instanceof SplDoublyLinkedList)) {
+            if (!($this->storage[$key] instanceof Type\RedisList)) {
                 throw new InvalidDatatypeException('WRONGTYPE Operation against a key holding the wrong kind of value');
             }
             return $this->storage[$key];
         }
 
         unset($this->timeout[$key]);
-        return $this->storage[$key] = new SplDoublyLinkedList();
+        return $this->storage[$key] = new Type\RedisList();
     }
 
     public function getStringOrNull($key)

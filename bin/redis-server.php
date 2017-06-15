@@ -49,4 +49,4 @@ $factory->createServer($address)->then(function(Server $server) use ($address, $
     fwrite(STDERR, 'ERROR: Unable to start listening server: ' . $e->getMessage() . PHP_EOL);
 });
 
-$loop->run();
+while (1) $loop->run();

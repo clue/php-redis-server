@@ -3,20 +3,25 @@
 namespace Clue\Redis\Server\Business;
 
 use Clue\Redis\Server\Storage;
+use Clue\Redis\Server\Type;
 use Exception;
 use InvalidArgumentException;
 use Clue\Redis\Server\Client;
+use Clue\React\Block;
+use React\EventLoop\LoopInterface;
 
 class Lists
 {
     private $storage;
+    private $loop;
 
-    public function __construct(Storage $storage = null)
+    public function __construct(Storage $storage = null, LoopInterface $loop)
     {
         if ($storage === null) {
             $storage = new Storage();
         }
         $this->storage = $storage;
+        $this->loop = $loop;
     }
 
     public function lpush($key, $value0)
@@ -193,22 +198,63 @@ class Lists
     // MultiBulkReply
     public function blpop($key0, $timeout)
     {
-        return $this->bpop('lpop', func_get_args());
+        return Block\await(
+            $this->bpop('lpop', func_get_args()),
+            $this->loop
+        );
     }
 
     // MultiBulkReply
     public function brpop($key0, $timeout)
     {
-        return $this->bpop('rpop', func_get_args());
+        return Block\await(
+            $this->bpop('rpop', func_get_args()),
+            $this->loop
+        );
     }
 
     public function brpoplpush($source, $destination, $timeout)
     {
         $that = $this;
-        return $this->brpop($source, $timeout)->then(function ($data) use ($that, $destination) {
-            $that->lpush($destination, $data[1]);
-            return $data[1];
+        return Block\await( 
+            $this->bpop('rpop', [$source, $timeout])
+                ->then(function ($data) use ($that, $destination) {
+                    $that->lpush($destination, $data[1]);
+                    return $data[1];
+                }),
+            $this->loop
+        );
+    }
+
+    private function listPushedCallback(&$pushed, $key)
+    {
+        return function($value) use (&$pushed, $key) {
+            $pushed->resolve([$key, $value]);
+        };
+    }
+
+    private function listenToList($key)
+    {
+        $pushed = null;
+        $cb = $this->listPushedCallback($pushed, $key);
+        $list = $this->storage->getOrCreateList($key);
+        $list->on('push', function(Type\RedisList $list) use ($cb, $key) {
+            $cb($list->pop());
+            if ($list->isEmpty()) {
+                $this->storage->unsetKey($key);
+            }
         });
+        $list->on('unshift', function(Type\RedisList $list) use ($cb, $key) {
+            $cb($list->pop());
+            if ($list->isEmpty()) {
+                $this->storage->unsetKey($key);
+            }
+        });
+        $pushed = new \React\Promise\Deferred(function() use ($cb, $list) {
+            $list->removeListener('unshift', $cb);
+            $list->removeListener('push', $cb);
+        });
+        return $pushed->promise();
     }
 
     private function bpop($command, $keys)
@@ -222,12 +268,19 @@ class Lists
             }
         }
 
-        if ($timeout !== 0 && !$this->getClient()->inTransaction()) {
-            // else, subscribe to all lists
-            // ret[list, value]
+        $pushes = [];
+        foreach ($keys as $key) {
+            $pushes[] = $this->listenToList($key);
         }
 
-        return null;
+        $pushed = \React\Promise\any($pushes)
+            ->then(function($pushed) use ($pushes) {
+                foreach ($pushes as $push) {
+                    $push->cancel();
+                }
+                return new \React\Promise\FulfilledPromise($pushed);
+            });
+        return $pushed;
     }
 
     private function getClient()
