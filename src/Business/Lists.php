@@ -81,7 +81,7 @@ class Lists
         $value = $list->shift();
 
         if ($list->isEmpty()) {
-            $this->storage->unsetKey($key);
+            //$this->storage->unsetKey($key);
         }
 
         return $value;
@@ -98,7 +98,7 @@ class Lists
         $value = $list->pop();
 
         if ($list->isEmpty()) {
-            $this->storage->unsetKey($key);
+            //$this->storage->unsetKey($key);
         }
 
         return $value;
@@ -116,7 +116,7 @@ class Lists
         $destinationList->unshift($value);
 
         if ($sourceList->isEmpty()) {
-            $this->storage->unsetKey($source);
+            //$this->storage->unsetKey($source);
         }
 
         return $value;
@@ -241,13 +241,13 @@ class Lists
         $list->on('push', function(Type\RedisList $list) use ($cb, $key) {
             $cb($list->pop());
             if ($list->isEmpty()) {
-                $this->storage->unsetKey($key);
+                //$this->storage->unsetKey($key);
             }
         });
         $list->on('unshift', function(Type\RedisList $list) use ($cb, $key) {
             $cb($list->pop());
             if ($list->isEmpty()) {
-                $this->storage->unsetKey($key);
+                //$this->storage->unsetKey($key);
             }
         });
         $pushed = new \React\Promise\Deferred(function() use ($cb, $list) {
@@ -273,6 +273,11 @@ class Lists
             $pushes[] = $this->listenToList($key);
         }
 
+        if ($timeout) {
+            $dtimeout = new \React\Promise\Deferred;
+            $pushes[] = $dtimeout->promise();
+        }
+        
         $pushed = \React\Promise\any($pushes)
             ->then(function($pushed) use ($pushes) {
                 foreach ($pushes as $push) {
@@ -280,6 +285,15 @@ class Lists
                 }
                 return new \React\Promise\FulfilledPromise($pushed);
             });
+        
+        if ($timeout) {
+            $this->loop->addTimer($timeout, function() use ($pushes, $dtimeout) {
+                $dtimeout->resolve(null);
+                foreach ($pushes as $push) {
+                    $push->cancel();
+                }
+            });
+        }
         return $pushed;
     }
 
