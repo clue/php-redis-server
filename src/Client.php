@@ -2,7 +2,7 @@
 
 namespace Clue\Redis\Server;
 
-use React\Socket\Connection;
+use React\Socket\ConnectionInterface;
 use Clue\Redis\Protocol\Model\ModelInterface;
 use Clue\Redis\Protocol\Model\Request;
 use InvalidArgumentException;
@@ -20,7 +20,7 @@ class Client
     private $blocking = false;
     private $watchTouched = false;
 
-    public function __construct(Connection $connection, Invoker $business, Storage $database)
+    public function __construct(ConnectionInterface $connection, Invoker $business, Storage $database)
     {
         $this->connection = $connection;
         $this->business = $business;
@@ -165,7 +165,7 @@ class Client
 
     public function setBusiness(Invoker $business)
     {
-        return $this->business;
+        $this->business = $business;
     }
 
     public function handleRequest(Request $request)

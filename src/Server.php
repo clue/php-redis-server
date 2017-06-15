@@ -3,10 +3,10 @@
 namespace Clue\Redis\Server;
 
 use Evenement\EventEmitter;
-use React\Socket\Server as ServerSocket;
+use React\Socket\ServerInterface;
 use React\EventLoop\LoopInterface;
 use Clue\Redis\Protocol\Factory as ProtocolFactory;
-use React\Socket\Connection;
+use React\Socket\ConnectionInterface;
 use Clue\Redis\Protocol\Model\ErrorReply;
 use Clue\Redis\Protocol\Model\ModelInterface;
 use Clue\Redis\Protocol\Model\MultiBulkReply;
@@ -33,8 +33,9 @@ class Server extends EventEmitter
     private $business;
     private $clients;
     private $databases;
+    private $config;
 
-    public function __construct(ServerSocket $socket, LoopInterface $loop, ProtocolFactory $protocol = null, Invoker $business = null)
+    public function __construct(ServerInterface $socket, LoopInterface $loop, ProtocolFactory $protocol = null, Invoker $business = null)
     {
         if ($protocol === null) {
             $protocol = new ProtocolFactory();
@@ -51,6 +52,7 @@ class Server extends EventEmitter
             $business->addCommands(new Business\Connection($this));
             $business->addCommands(new Business\Keys($db));
             $business->addCommands(new Business\Lists($db));
+            $business->addCommands(new Business\Server($this));
             $business->addCommands(new Business\Strings($db));
             $business->renameCommand('x_echo', 'echo');
         }
@@ -60,6 +62,7 @@ class Server extends EventEmitter
         $this->protocol = $protocol;
         $this->business = $business;
         $this->clients = new SplObjectStorage();
+        $this->config = new Config();
 
         $this->on('error', function ($error, Client $client) {
             $client->end();
@@ -68,13 +71,18 @@ class Server extends EventEmitter
         $socket->on('connection', array($this, 'handleConnection'));
     }
 
-    public function handleConnection(Connection $connection)
+    public function handleConnection(ConnectionInterface $connection)
     {
         $parser = $this->protocol->createResponseParser();
         $parser = new RequestParser();
         $that = $this;
 
-        $client = new Client($connection, $this->business, reset($this->databases));
+        $business = $this->business;
+        if ($this->config->get('requirepass') !== '') {
+            $business = new AuthInvoker($business);
+        }
+
+        $client = new Client($connection, $business, reset($this->databases));
         $this->clients->attach($client);
 
         $connection->on('data', function ($data) use ($parser, $that, $client) {
@@ -118,11 +126,24 @@ class Server extends EventEmitter
 
     public function getLocalAddress()
     {
-        return stream_socket_get_name($this->socket->master, false);
+        if (isset($this->socket->master)) {
+            return stream_socket_get_name($this->socket->master, false);
+        }
+        return $this->socket->getPort();
     }
 
     public function getDatabases()
     {
         return $this->databases;
+    }
+
+    public function getClients()
+    {
+        return $this->clients;
+    }
+
+    public function getConfig()
+    {
+        return $this->config;
     }
 }
