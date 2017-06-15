@@ -213,7 +213,7 @@ class Lists
         );
     }
 
-    public function brpoplpush($source, $destination, $timeout)
+    public function brpoplpush($source, $destination, $timeout = 0)
     {
         $that = $this;
         return Block\await( 
