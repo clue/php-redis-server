@@ -51,7 +51,7 @@ class Server extends EventEmitter
             $business = new Invoker($protocol->createSerializer());
             $business->addCommands(new Business\Connection($this));
             $business->addCommands(new Business\Keys($db));
-            $business->addCommands(new Business\Lists($db));
+            $business->addCommands(new Business\Lists($db, $loop));
             $business->addCommands(new Business\Server($this));
             $business->addCommands(new Business\Strings($db));
             $business->renameCommand('x_echo', 'echo');

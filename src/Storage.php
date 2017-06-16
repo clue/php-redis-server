@@ -3,6 +3,7 @@
 namespace Clue\Redis\Server;
 
 use SplDoublyLinkedList;
+use ArrayObject;
 
 class Storage
 {

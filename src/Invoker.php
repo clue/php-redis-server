@@ -40,6 +40,32 @@ class Invoker
         return $method->getNumberOfRequiredParameters();
     }
 
+    private function respond($command, $ret)
+    {
+        if ($ret instanceof \React\Promise\PromiseInterface)
+        {
+            $done = new \React\Promise\Deferred;
+            $ret
+                ->then(function($ret) use ($command, $done) {
+                    $done->resolve($this->respond($command, $ret));
+                })
+                ->otherwise(function($error) use ($done) {
+                    $done->resolve($this->serializer->getErrorMessage($error->getMessage()));
+                });
+            return $done->promise();
+        }
+        
+        if (isset($this->commandType[$command])) {
+            if ($this->commandType[$command] === self::TYPE_STRING_STATUS && is_string($ret)) {
+                return $this->serializer->getStatusMessage($ret);
+            } elseif ($this->commandType[$command] === self::TYPE_TRUE_STATUS && $ret === true) {
+                return $this->serializer->getStatusMessage('OK');
+            }
+        }
+
+        return $this->serializer->getReplyMessage($ret);
+    }
+    
     public function invoke(Request $request, Client $client)
     {
         $command = strtolower($request->getCommand());
@@ -67,15 +93,7 @@ class Invoker
             return $this->serializer->getErrorMessage($e->getMessage());
         }
 
-        if (isset($this->commandType[$command])) {
-            if ($this->commandType[$command] === self::TYPE_STRING_STATUS && is_string($ret)) {
-                return $this->serializer->getStatusMessage($ret);
-            } elseif ($this->commandType[$command] === self::TYPE_TRUE_STATUS && $ret === true) {
-                return $this->serializer->getStatusMessage('OK');
-            }
-        }
-
-        return $this->serializer->getReplyMessage($ret);
+        return $this->respond($command, $ret);
     }
 
     public function getSerializer()
