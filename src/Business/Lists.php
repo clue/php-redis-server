@@ -93,7 +93,7 @@ class Lists
         $value = $list->shift();
 
         if ($list->isEmpty()) {
-            //$this->storage->unsetKey($key);
+            $this->storage->unsetKey($key);
         }
 
         return $value;
@@ -110,7 +110,7 @@ class Lists
         $value = $list->pop();
 
         if ($list->isEmpty()) {
-            //$this->storage->unsetKey($key);
+            $this->storage->unsetKey($key);
         }
 
         return $value;
@@ -129,7 +129,7 @@ class Lists
         $this->wakeUpBlockers($destination, $value);
 
         if ($sourceList->isEmpty()) {
-            //$this->storage->unsetKey($source);
+            $this->storage->unsetKey($source);
         }
 
         return $value;
