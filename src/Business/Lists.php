@@ -25,12 +25,12 @@ class Lists
         $this->loop = $loop;
     }
 
-    protected function wakeUpBlockers($key, $value)
+    protected function wakeUpBlocker($key)
     {
         if (isset($this->blockers[$key])) {
             $cb = array_shift($this->blockers[$key]);
             if (count($this->blockers[$key]) <= 0) unset($this->blockers[$key]);
-            $cb($value);
+            $cb();
         }
     }
 
@@ -43,10 +43,13 @@ class Lists
 
         foreach ($values as $value) {
             $list->unshift($value);
-            $this->wakeUpBlockers($key, $value);
+        }
+        $rc = $list->count();
+        foreach ($values as $value) {
+            $this->wakeUpBlocker($key);
         }
 
-        return $list->count();
+        return $rc;
     }
 
     public function lpushx($key, $value)
@@ -67,10 +70,13 @@ class Lists
 
         foreach ($values as $value) {
             $list->push($value);
-            $this->wakeUpBlockers($key, $value);
+        }
+        $rc = $list->count();
+        foreach ($values as $value) {
+            $this->wakeUpBlocker($key);
         }
 
-        return $list->count();
+        return $rc;
     }
 
     public function rpushx($key, $value)
@@ -126,7 +132,7 @@ class Lists
 
         $value = $sourceList->pop();
         $destinationList->unshift($value);
-        $this->wakeUpBlockers($destination, $value);
+        $this->wakeUpBlocker($destination);
 
         if ($sourceList->isEmpty()) {
             $this->storage->unsetKey($source);
@@ -211,40 +217,31 @@ class Lists
     // MultiBulkReply
     public function blpop($key0, $timeout)
     {
-        return Block\await(
-            $this->bpop('lpop', func_get_args()),
-            $this->loop
-        );
+        return $this->bpop('lpop', func_get_args());
     }
 
     // MultiBulkReply
     public function brpop($key0, $timeout)
     {
-        return Block\await(
-            $this->bpop('rpop', func_get_args()),
-            $this->loop
-        );
+        return $this->bpop('rpop', func_get_args());
     }
 
     public function brpoplpush($source, $destination, $timeout = 0)
     {
         $that = $this;
-        return Block\await( 
-            $this->bpop('rpop', [$source, $timeout])
-                ->then(function ($data) use ($that, $destination) {
-                    $that->lpush($destination, $data[1]);
-                    return $data[1];
-                }),
-            $this->loop
-        );
+        return $this->bpop('rpop', [$source, $timeout])
+            ->then(function ($data) use ($that, $destination) {
+                $that->lpush($destination, $data[1]);
+                return $data[1];
+            });
     }
 
     private function listenToList($key)
     {
-        $pushed = null;
+        $pushed = new \React\Promise\Deferred;
         if (!isset($this->blockers[$key])) $this->blockers[$key] = [];
-        $cb = function($value) use (&$pushed, $key) {
-            $pushed->resolve([$key, $value]);
+        $cb = function() use (&$pushed, $key) {
+            $pushed->resolve($key);
         };
         $this->blockers[$key][] = $cb;
         return $pushed->promise();
@@ -272,11 +269,12 @@ class Lists
         }
         
         $pushed = \React\Promise\any($pushes)
-            ->then(function($pushed) use ($pushes) {
+            ->then(function($key) use ($pushes, $command) {
                 foreach ($pushes as $push) {
                     $push->cancel();
                 }
-                return new \React\Promise\FulfilledPromise($pushed);
+                $ret = $this->$command($key);
+                return new \React\Promise\FulfilledPromise([$key, $ret]);
             });
         
         if ($timeout) {
