@@ -175,7 +175,13 @@ class Client
 
         $ret = $this->business->invoke($request, $this);
         if ($ret !== null) {
-            $this->write($ret);
+            if (is_string($ret)) $this->write($ret);
+            else if ($ret instanceof \React\Promise\PromiseInterface)
+            {
+                $ret->then(function($resp) {
+                    $this->write($resp);
+                });
+            }
         }
     }
 
