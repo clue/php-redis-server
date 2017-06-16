@@ -14,6 +14,7 @@ class Lists
 {
     private $storage;
     private $loop;
+    private $blockers = [];
 
     public function __construct(Storage $storage = null, LoopInterface $loop)
     {
@@ -22,6 +23,15 @@ class Lists
         }
         $this->storage = $storage;
         $this->loop = $loop;
+    }
+
+    protected function wakeUpBlockers($key, $value)
+    {
+        if (isset($this->blockers[$key])) {
+            $cb = array_unshift($this->blockers[$key]);
+            if (count($this->blockers[$key]) <= 0) unset($this->blockers[$key]);
+            $cb($value);
+        }
     }
 
     public function lpush($key, $value0)
@@ -33,6 +43,7 @@ class Lists
 
         foreach ($values as $value) {
             $list->unshift($value);
+            $this->wakeUpBlockers($key, $value);
         }
 
         return $list->count();
@@ -56,6 +67,7 @@ class Lists
 
         foreach ($values as $value) {
             $list->push($value);
+            $this->wakeUpBlockers($key, $value);
         }
 
         return $list->count();
@@ -114,6 +126,7 @@ class Lists
 
         $value = $sourceList->pop();
         $destinationList->unshift($value);
+        $this->wakeUpBlockers($destination, $value);
 
         if ($sourceList->isEmpty()) {
             //$this->storage->unsetKey($source);
@@ -226,34 +239,14 @@ class Lists
         );
     }
 
-    private function listPushedCallback(&$pushed, $key)
-    {
-        return function($value) use (&$pushed, $key) {
-            $pushed->resolve([$key, $value]);
-        };
-    }
-
     private function listenToList($key)
     {
         $pushed = null;
-        $cb = $this->listPushedCallback($pushed, $key);
-        $list = $this->storage->getOrCreateList($key);
-        $list->on('push', function(Type\RedisList $list) use ($cb, $key) {
-            $cb($list->pop());
-            if ($list->isEmpty()) {
-                //$this->storage->unsetKey($key);
-            }
-        });
-        $list->on('unshift', function(Type\RedisList $list) use ($cb, $key) {
-            $cb($list->pop());
-            if ($list->isEmpty()) {
-                //$this->storage->unsetKey($key);
-            }
-        });
-        $pushed = new \React\Promise\Deferred(function() use ($cb, $list) {
-            $list->removeListener('unshift', $cb);
-            $list->removeListener('push', $cb);
-        });
+        if (!isset($this->blockers[$key])) $this->blockers[$key] = [];
+        $cb = function($value) use (&$pushed, $key) {
+            $pushed->resolve([$key, $value]);
+        };
+        $this->blockers[$key][] = $cb;
         return $pushed->promise();
     }
 
