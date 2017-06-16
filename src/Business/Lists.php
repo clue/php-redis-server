@@ -28,7 +28,7 @@ class Lists
     protected function wakeUpBlockers($key, $value)
     {
         if (isset($this->blockers[$key])) {
-            $cb = array_unshift($this->blockers[$key]);
+            $cb = array_shift($this->blockers[$key]);
             if (count($this->blockers[$key]) <= 0) unset($this->blockers[$key]);
             $cb($value);
         }
