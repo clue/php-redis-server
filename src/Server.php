@@ -73,8 +73,7 @@ class Server extends EventEmitter
 
     public function handleConnection(ConnectionInterface $connection)
     {
-        $parser = $this->protocol->createResponseParser();
-        $parser = new RequestParser();
+        $parser = $this->protocol->createRequestParser();
         $that = $this;
 
         $business = $this->business;
