@@ -1,39 +1,38 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Clue\Redis\Server\Business;
 
+use Clue\Redis\Server\Client;
 use Clue\Redis\Server\Storage;
 use Exception;
 use InvalidArgumentException;
-use Clue\Redis\Server\Client;
 
 class Strings
 {
-    private $storage;
+    private Storage $storage;
 
-    public function __construct(Storage $storage = null)
+    public function __construct(?Storage $storage = null)
     {
-        if ($storage === null) {
-            $storage = new Storage();
-        }
-        $this->storage = $storage;
+        $this->storage = $storage ?? new Storage();
     }
 
-    public function append($key, $value)
+    public function append(string $key, $value): int
     {
-        $string =& $this->storage->getStringRef($key);
+        $string = &$this->storage->getStringRef($key);
         $string .= $value;
 
-        return strlen($string);
+        return mb_strlen($string);
     }
 
-    public function get($key)
+    public function get(string $key): ?string
     {
         return $this->storage->getStringOrNull($key);
     }
 
     // StatusReply
-    public function set($key, $value)
+    public function set(string $key, $value): ?bool
     {
         if (func_num_args() > 2) {
             $args = func_get_args();
@@ -46,7 +45,7 @@ class Strings
             $nx = false;
 
             for ($i = 0, $n = count($args); $i < $n; ++$i) {
-                $arg = strtoupper($args[$i]);
+                $arg = mb_strtoupper($args[$i]);
 
                 if ($arg === 'XX') {
                     $xx = true;
@@ -80,7 +79,7 @@ class Strings
             }
 
             if ($ex !== null) {
-                $px += $ex * 1000;
+                $px += $ex * 1_000;
             }
 
             if ($px !== null) {
@@ -94,23 +93,21 @@ class Strings
     }
 
     // StatusReply
-    public function setex($key, $seconds, $value)
+    public function setex(string $key, int $seconds, $value): bool
     {
-        return $this->psetex($key, $this->coerceInteger($seconds) * 1000, $value);
+        return $this->psetex($key, $seconds * 1_000, $value);
     }
 
     // StatusReply
-    public function psetex($key, $milliseconds, $value)
+    public function psetex(string $key, int $milliseconds, $value): bool
     {
-        $milliseconds = $this->coerceInteger($milliseconds);
-
         $this->storage->setString($key, $value);
-        $this->storage->setTimeout($key, microtime(true) + ($milliseconds / 1000));
+        $this->storage->setTimeout($key, microtime(true) + ($milliseconds / 1_000));
 
         return true;
     }
 
-    public function setnx($key, $value)
+    public function setnx(string $key, $value): bool
     {
         if ($this->storage->hasKey($key)) {
             return false;
@@ -121,15 +118,13 @@ class Strings
         return true;
     }
 
-    public function incr($key)
+    public function incr(string $key): int
     {
         return $this->incrby($key, 1);
     }
 
-    public function incrby($key, $increment)
+    public function incrby(string $key, int $increment): int
     {
-        $increment = $this->coerceInteger($increment);
-
         $value = $this->storage->getIntegerOrNull($key);
         $value += $increment;
 
@@ -138,17 +133,17 @@ class Strings
         return $value;
     }
 
-    public function decr($key)
+    public function decr(string $key): int
     {
         return $this->incrby($key, -1);
     }
 
-    public function decrby($key, $decrement)
+    public function decrby(string $key, int $decrement): int
     {
-        return $this->incrby($key, -$this->coerceInteger($decrement));
+        return $this->incrby($key, -$decrement);
     }
 
-    public function getset($key, $value)
+    public function getset(string $key, $value): ?string
     {
         $old = $this->storage->getStringOrNull($key);
         $this->storage->setString($key, $value);
@@ -156,12 +151,9 @@ class Strings
         return $old;
     }
 
-    public function getrange($key, $start, $end)
+    public function getrange(string $key, int $start, int $end): string
     {
-        $start = $this->coerceInteger($start);
-        $end   = $this->coerceInteger($end);
-
-        $string = $this->storage->getStringOrNull($key);
+        $string = $this->storage->getStringOrNull($key) ?? '';
 
         if ($end > 0) {
             $end = $end - $start + 1;
@@ -169,48 +161,45 @@ class Strings
             if ($start < 0) {
                 $end = $end - $start + 1;
             } else {
-                $end += 1;
+                ++$end;
                 if ($end === 0) {
                     return $string;
                 }
             }
         }
 
-        return (string)substr($string, $start, $end);
+        return (string) mb_substr($string, $start, $end);
     }
 
-    public function setrange($key, $offset, $value)
+    public function setrange(string $key, int $offset, $value): int
     {
-        $offset = $this->coerceInteger($offset);
-
-        $string =& $this->storage->getStringRef($key);
-        $slen = strlen($string);
+        $string = &$this->storage->getStringRef($key);
+        $slen = mb_strlen($string);
 
         $post = '';
 
         if ($slen < $offset) {
             $string .= str_repeat("\0", $offset - $slen);
         } else {
-            $post = (string)substr($string, $offset + strlen($value));
-            $string = substr($string, 0, $offset);
+            $post = (string) mb_substr($string, $offset + mb_strlen($value));
+            $string = mb_substr($string, 0, $offset);
         }
 
         $string .= $value . $post;
 
-        return strlen($string);
+        return mb_strlen($string);
     }
 
-    public function mget($key0)
+    public function mget(string $key): array
     {
         $keys = func_get_args();
-        $ret  = array();
+        $ret = [];
 
         foreach ($keys as $key) {
             try {
-                $ret []= $this->storage->getStringOrNull($key);
-            }
-            catch (Exception $ignore) {
-                $ret []= null;
+                $ret[] = $this->storage->getStringOrNull($key);
+            } catch (Exception $ignore) {
+                $ret[] = null;
             }
         }
 
@@ -218,7 +207,7 @@ class Strings
     }
 
     // StatusReply
-    public function mset($key0, $value0)
+    public function mset(string $key, $value): bool
     {
         $n = func_num_args();
         if ($n & 1) {
@@ -233,7 +222,7 @@ class Strings
         return true;
     }
 
-    public function msetnx($key0, $value0)
+    public function msetnx(string $key, $value): bool
     {
         for ($i = 0, $n = func_num_args(); $i < $n; $i += 2) {
             if ($this->storage->hasKey(func_get_arg($i))) {
@@ -241,27 +230,28 @@ class Strings
             }
         }
 
-        call_user_func_array(array($this, 'mset'), func_get_args());
+        call_user_func_array([$this, 'mset'], func_get_args());
 
         return true;
     }
 
-    public function strlen($key)
+    public function strlen(string $key): int
     {
-        return strlen($this->storage->getStringOrNull($key));
+        return mb_strlen($this->storage->getStringOrNull($key) ?? '');
     }
 
-    public function setClient(Client $client)
+    public function setClient(Client $client): void
     {
         $this->storage = $client->getDatabase();
     }
 
-    private function coerceInteger($value)
+    private function coerceInteger($value): int
     {
-        $int = (int)$value;
-        if ((string)$int !== (string)$value) {
+        $int = (int) $value;
+        if ((string) $int !== (string) $value) {
             throw new Exception('ERR value is not an integer or out of range');
         }
+
         return $int;
     }
 }

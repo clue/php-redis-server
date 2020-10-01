@@ -1,37 +1,40 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Clue\Redis\Server;
 
 use SplDoublyLinkedList;
 
 class Storage
 {
-    private $storage = array();
-    private $timeout = array();
+    private array $storage = [];
 
-    private $id;
+    private array $timeout = [];
 
-    public function __construct($id = '0')
+    private string $id;
+
+    public function __construct(string $id = '0')
     {
         $this->id = $id;
     }
 
-    public function getId()
+    public function getId(): string
     {
         return $this->id;
     }
 
-    public function unsetKey($key)
+    public function unsetKey(string $key): void
     {
         unset($this->storage[$key], $this->timeout[$key]);
     }
 
-    public function hasKey($key)
+    public function hasKey(string $key): bool
     {
         return isset($this->storage[$key]) && (!isset($this->timeout[$key]) || $this->timeout[$key] > microtime(true));
     }
 
-    public function getAllKeys()
+    public function getAllKeys(): array
     {
         $this->removeAllExpired();
 
@@ -49,15 +52,15 @@ class Storage
         return array_rand($this->storage);
     }
 
-    public function setString($key, $value)
+    public function setString(string $key, $value): void
     {
-        $this->storage[$key] = (string)$value;
+        $this->storage[$key] = (string) $value;
         unset($this->timeout[$key]);
     }
 
-    public function rename($oldkey, $newkey)
+    public function rename(string $oldkey, string $newkey): void
     {
-        if ($oldkey != $newkey) {
+        if ($oldkey !== $newkey) {
             $this->storage[$newkey] = $this->storage[$oldkey];
             unset($this->storage[$oldkey]);
             if (isset($this->timeout[$oldkey])) {
@@ -67,33 +70,36 @@ class Storage
         }
     }
 
-    public function get($key)
+    public function get(string $key)
     {
         if (!isset($this->storage[$key])) {
             return null;
         }
         if (isset($this->timeout[$key]) && microtime(true) > $this->timeout[$key]) {
             unset($this->storage[$key], $this->timeout[$key]);
+
             return null;
         }
 
         return $this->storage[$key];
     }
 
-    public function getOrCreateList($key)
+    public function getOrCreateList(string $key): SplDoublyLinkedList
     {
         if ($this->hasKey($key)) {
             if (!($this->storage[$key] instanceof SplDoublyLinkedList)) {
                 throw new InvalidDatatypeException('WRONGTYPE Operation against a key holding the wrong kind of value');
             }
+
             return $this->storage[$key];
         }
 
         unset($this->timeout[$key]);
+
         return $this->storage[$key] = new SplDoublyLinkedList();
     }
 
-    public function getStringOrNull($key)
+    public function getStringOrNull(string $key): ?string
     {
         $value = $this->get($key);
 
@@ -108,19 +114,19 @@ class Storage
         return $value;
     }
 
-    public function& getStringRef($key)
+    public function &getStringRef(string $key)
     {
         if (!$this->hasKey($key)) {
             $this->storage[$key] = '';
             unset($this->timeout[$key]);
-        } else if (!is_string($this->storage[$key])) {
+        } elseif (!is_string($this->storage[$key])) {
             throw new InvalidDatatypeException();
         }
 
         return $this->storage[$key];
     }
 
-    public function getIntegerOrNull($key)
+    public function getIntegerOrNull(string $key): ?int
     {
         $value = $this->getStringOrNull($key);
 
@@ -128,15 +134,15 @@ class Storage
             throw new InvalidDatatypeException('ERR value is not an integer or out of range');
         }
 
-        return (int)$value;
+        return (int) $value;
     }
 
-    public function getTimeout($key)
+    public function getTimeout(string $key): ?int
     {
         return isset($this->timeout[$key]) ? $this->timeout[$key] : null;
     }
 
-    public function setTimeout($key, $timestamp)
+    public function setTimeout(string $key, ?int $timestamp): void
     {
         if ($timestamp === null || !isset($this->storage[$key])) {
             unset($this->timeout[$key]);
@@ -145,18 +151,19 @@ class Storage
         }
     }
 
-    public function reset()
+    public function reset(): void
     {
-        $this->storage = $this->timeout = array();
+        $this->storage = $this->timeout = [];
     }
 
-    public function count()
+    public function count(): int
     {
         $this->removeAllExpired();
+
         return count($this->storage);
     }
 
-    private function removeAllExpired()
+    private function removeAllExpired(): void
     {
         if ($this->timeout) {
             $now = microtime(true);

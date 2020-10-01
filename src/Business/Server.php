@@ -1,16 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Clue\Redis\Server\Business;
 
+use Clue\Redis\Server\Client;
+use Clue\Redis\Server\Config;
+use Clue\Redis\Server\Server as ServerInstance;
+use Clue\Redis\Server\Storage;
 use InvalidArgumentException;
 use OutOfBoundsException;
-use Clue\Redis\Server\Server as ServerInstance;
-use Clue\Redis\Server\Client;
 
 class Server
 {
-    private $server;
-    private $client = null;
+    private ServerInstance $server;
+
+    private ?Client $client = null;
 
     public function __construct(ServerInstance $server)
     {
@@ -18,19 +23,21 @@ class Server
     }
 
     // StatusReply
-    public function client($subcommand)
+    public function client(string $subcommand): bool
     {
         $n = func_num_args();
-        $subcommand = strtolower($subcommand);
+        $subcommand = mb_strtolower($subcommand);
 
         if ($subcommand === 'list' && $n === 1) {
             $ret = '';
             foreach ($this->getAllClients() as $client) {
                 $ret .= $client->getDescription() . "\n";
             }
+
             return $ret;
         } elseif ($subcommand === 'kill' && $n === 2) {
             $this->getClientByIp(func_get_arg(1))->end();
+
             return true;
         } elseif ($subcommand === 'getname' && $n === 1) {
             return $this->getClient()->getName();
@@ -44,42 +51,44 @@ class Server
     }
 
     // StatusReply
-    public function config($subcommand)
+    public function config(string $subcommand)
     {
         $n = func_num_args();
-        $subcommand = strtolower($subcommand);
+        $subcommand = mb_strtolower($subcommand);
 
         if ($subcommand === 'get') {
             if ($n !== 2) {
                 throw new InvalidArgumentException('ERR Wrong number of arguments for CONFIG get');
             }
             $pattern = func_get_arg(1);
-            $ret = array();
+            $ret = [];
             foreach ($this->getConfig() as $name => $value) {
                 if (fnmatch($pattern, $name)) {
-                    $ret []= $name;
-                    $ret []= $value;
+                    $ret[] = $name;
+                    $ret[] = $value;
                 }
             }
+
             return $ret;
         } elseif ($subcommand === 'set') {
             if ($n !== 3) {
                 throw new InvalidArgumentException('ERR Wrong number of arguments for CONFIG set');
             }
             $this->getConfig()->set(func_get_arg(1), func_get_arg(2));
+
             return true;
         }
 
         throw new InvalidArgumentException('ERR CONFIG subcommand must be one of GET, SET');
     }
 
-    public function dbsize()
+    public function dbsize(): int
     {
         return $this->getDatabase()->count();
     }
 
     // StatusReply
-    public function flushdb()
+    public function flushdb(): bool
     {
         $this->getDatabase()->reset();
 
@@ -87,7 +96,7 @@ class Server
     }
 
     // StatusReply
-    public function flushall()
+    public function flushall(): bool
     {
         foreach ($this->getDatabases() as $database) {
             $database->reset();
@@ -96,7 +105,7 @@ class Server
         return true;
     }
 
-    public function shutdown()
+    public function shutdown(): void
     {
         // save/nosave doesn't matter
 
@@ -110,34 +119,36 @@ class Server
         $this->getServer()->close();
     }
 
-    public function time()
+    public function time(): array
     {
         $time = array_reverse(explode(' ', microtime(false)));
-        $time[1] = trim($time[1], ".0");
+        $time[1] = trim($time[1], '.0');
 
         return $time;
     }
 
-    private function getAllClients()
-    {
-        return $this->getServer()->getClients();
-    }
-
-    public function setClient(Client $client)
+    public function setClient(Client $client): void
     {
         $this->client = $client;
     }
 
-    private function getClient()
+    private function getAllClients(): \SplObjectStorage
+    {
+        return $this->getServer()->getClients();
+    }
+
+    private function getClient(): Client
     {
         if ($this->client === null) {
-            throw new UnexpectedValueException('Invalid state');
+            throw new \UnexpectedValueException('Invalid state');
         }
+
         return $this->client;
     }
 
-    private function getClientByIp($ip)
+    private function getClientByIp(string $ip): Client
     {
+        /** @var Client $client */
         foreach ($this->getAllClients() as $client) {
             if ($client->getRemoteAddress() === $ip) {
                 return $client;
@@ -146,22 +157,22 @@ class Server
         throw new OutOfBoundsException('ERR No such client');
     }
 
-    private function getConfig()
+    private function getConfig(): Config
     {
         return $this->server->getConfig();
     }
 
-    private function getDatabases()
+    private function getDatabases(): array
     {
         return $this->getServer()->getDatabases();
     }
 
-    private function getDatabase()
+    private function getDatabase(): Storage
     {
         return $this->getClient()->getDatabase();
     }
 
-    private function getServer()
+    private function getServer(): ServerInstance
     {
         return $this->server;
     }

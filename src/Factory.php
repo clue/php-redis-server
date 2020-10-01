@@ -1,33 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Clue\Redis\Server;
 
-use React\Socket\Server as ServerSocket;
-use React\Promise\Deferred;
-use React\EventLoop\LoopInterface;
-use Clue\Redis\Server\Server;
 use Clue\Redis\Protocol\Factory as ProtocolFactory;
-use InvalidArgumentException;
-use BadMethodCallException;
 use Exception;
+use React\EventLoop\LoopInterface;
+use React\Promise\Deferred;
+use React\Promise\PromiseInterface;
+use React\Socket\Server as ServerSocket;
 
 class Factory
 {
-    private $loop;
-    private $connector;
-    private $protocol;
+    private LoopInterface $loop;
 
-    public function __construct(LoopInterface $loop, ProtocolFactory $protocol = null)
+    private ProtocolFactory $protocol;
+
+    public function __construct(LoopInterface $loop, ?ProtocolFactory $protocol = null)
     {
         $this->loop = $loop;
-
-        if ($protocol === null) {
-            $protocol = new ProtocolFactory();
-        }
-        $this->protocol = $protocol;
+        $this->protocol = $protocol ?? new ProtocolFactory();
     }
 
-    public function createServer($address)
+    public function createServer(string $address): PromiseInterface
     {
         $parts = $this->parseUrl($address);
 
@@ -37,24 +33,23 @@ class Factory
         try {
             $socket->listen($parts['port'], $parts['host']);
             $deferred->resolve(new Server($socket, $this->loop, $this->protocol));
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             $deferred->reject($e);
         }
 
         return $deferred->promise();
     }
 
-    private function parseUrl($target)
+    private function parseUrl(string $target): array
     {
-        if (strpos($target, '://') === false) {
+        if (mb_strpos($target, '://') === false) {
             $target = 'tcp://' . $target;
         }
 
         // parse_url() does not accept null ports (random port assignment) => manually remove
         $nullport = false;
-        if (substr($target, -2) === ':0') {
-            $target = substr($target, 0, -2);
+        if (mb_substr($target, -2) === ':0') {
+            $target = mb_substr($target, 0, -2);
             $nullport = true;
         }
 

@@ -1,136 +1,138 @@
 <?php
 
-use Clue\Redis\Server\Storage;
+declare(strict_types=1);
+
+namespace Clue\Redis\Server\Tests\Server\Business;
+
 use Clue\Redis\Server\Business\Keys;
+use Clue\Redis\Server\Storage;
+use Clue\Redis\Server\Tests\TestCase;
 
 class KeysTest extends TestCase
 {
     private $business;
+
     private $storage;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->storage = new Storage();
         $this->business = new Keys($this->storage);
     }
 
-    public function testKeys()
+    public function testKeys(): void
     {
-        $this->assertEquals(array(), $this->business->keys('*'));
-        $this->assertNull($this->business->randomkey());
+        static::assertEquals([], $this->business->keys('*'));
+        static::assertNull($this->business->randomkey());
 
         $this->storage->setString('one', 1);
         $this->storage->setString('two', 2);
         $this->storage->setString('three', 3);
 
-        $this->assertEquals(array('one', 'two', 'three'), $this->business->keys('*'));
-        $this->assertEquals(array('one', 'three'), $this->business->keys('*e'));
-        $this->assertEquals(array('one', 'two'), $this->business->keys('*o*'));
-        $this->assertEquals(array('one'), $this->business->keys('[eio]*'));
-        $this->assertEquals(array(), $this->business->keys('T*'));
+        static::assertEquals(['one', 'two', 'three'], $this->business->keys('*'));
+        static::assertEquals(['one', 'three'], $this->business->keys('*e'));
+        static::assertEquals(['one', 'two'], $this->business->keys('*o*'));
+        static::assertEquals(['one'], $this->business->keys('[eio]*'));
+        static::assertEquals([], $this->business->keys('T*'));
 
-        $this->assertEquals(array(), $this->business->keys('[*{?\\'));
+        static::assertEquals([], $this->business->keys('[*{?\\'));
     }
 
-    public function testExpiry()
+    public function testExpiry(): void
     {
-        $this->assertEquals(-2, $this->business->ttl('key'));
-        $this->assertEquals(-2, $this->business->pttl('key'));
+        static::assertEquals(-2, $this->business->ttl('key'));
+        static::assertEquals(-2, $this->business->pttl('key'));
 
-        $this->assertFalse($this->business->pexpire('key', '1000'));
-        $this->assertFalse($this->business->persist('key'));
+        static::assertFalse($this->business->pexpire('key', 1_000));
+        static::assertFalse($this->business->persist('key'));
 
         $this->storage->setString('key', 'value');
 
-        $this->assertEquals(-1, $this->business->ttl('key'));
-        $this->assertEquals(-1, $this->business->pttl('key'));
-        $this->assertFalse($this->business->persist('key'));
+        static::assertEquals(-1, $this->business->ttl('key'));
+        static::assertEquals(-1, $this->business->pttl('key'));
+        static::assertFalse($this->business->persist('key'));
 
-        $this->assertTrue($this->business->expire('key', '10'));
+        static::assertTrue($this->business->expire('key', 10));
 
-        $this->assertLessThan(10, $this->business->ttl('key'));
-        $this->assertLessThan(10000, $this->business->pttl('key'));
+        static::assertLessThan(10, $this->business->ttl('key'));
+        static::assertLessThan(10000, $this->business->pttl('key'));
 
-        $this->assertTrue($this->business->persist('key'));
-        $this->assertEquals(-1, $this->business->ttl('key'));
+        static::assertTrue($this->business->persist('key'));
+        static::assertEquals(-1, $this->business->ttl('key'));
     }
 
-    public function testRename()
+    public function testRename(): void
     {
         $this->storage->setString('key', 'value');
 
-        $this->assertTrue($this->business->rename('key', 'new'));
+        static::assertTrue($this->business->rename('key', 'new'));
 
-        $this->assertTrue($this->business->exists('new'));
-        $this->assertFalse($this->business->exists('key'));
+        static::assertTrue($this->business->exists('new'));
+        static::assertFalse($this->business->exists('key'));
     }
 
-    /**
-     * @expectedException Exception
-     */
-    public function testRenameNonExistant()
+    public function testRenameNonExistant(): void
     {
+        $this->expectException(\Exception::class);
         $this->business->rename('invalid', 'new');
     }
 
-    /**
-     * @expectedException Exception
-     */
-    public function testRenameSelf()
+    public function testRenameSelf(): void
     {
+        $this->expectException(\Exception::class);
         $this->storage->setString('key', 'value');
         $this->business->rename('key', 'key');
     }
 
-    public function testRenameOverwrite()
+    public function testRenameOverwrite(): void
     {
         $this->storage->setString('a', 'a');
 
         $this->storage->setString('target', 'b');
-        $this->storage->setTimeout('target', microtime(true) + 10);
+        $this->storage->setTimeout('target', (int) microtime(true) + 10);
 
-        $this->assertTrue($this->business->rename('a', 'target'));
-        $this->assertTrue($this->business->exists('target'));
-        $this->assertFalse($this->business->exists('a'));
+        static::assertTrue($this->business->rename('a', 'target'));
+        static::assertTrue($this->business->exists('target'));
+        static::assertFalse($this->business->exists('a'));
 
-        $this->assertEquals(-1, $this->business->ttl('target'));
+        static::assertEquals(-1, $this->business->ttl('target'));
     }
 
-    public function testRenameNx()
+    public function testRenameNx(): void
     {
         $this->storage->setString('a', 'a');
 
-        $this->assertTrue($this->business->renamenx('a', 'b'));
+        static::assertTrue($this->business->renamenx('a', 'b'));
 
         $this->storage->setString('c', 'c');
 
-        $this->assertFalse($this->business->renamenx('b', 'c'));
+        static::assertFalse($this->business->renamenx('b', 'c'));
     }
 
-    public function testType()
+    public function testType(): void
     {
-        $this->assertEquals('none', $this->business->type('nothing'));
+        static::assertEquals('none', $this->business->type('nothing'));
 
         $this->storage->setString('key', 'value');
-        $this->assertEquals('string', $this->business->type('key'));
+        static::assertEquals('string', $this->business->type('key'));
 
         $list = $this->storage->getOrCreateList('list');
         $list->push('value');
-        $this->assertEquals('list', $this->business->type('list'));
+        static::assertEquals('list', $this->business->type('list'));
     }
 
-    public function testRandomkey()
+    public function testRandomkey(): void
     {
-        $this->assertNull($this->business->randomkey());
+        static::assertNull($this->business->randomkey());
 
         $this->storage->setString('key', 'value');
 
-        $this->assertEquals('key', $this->business->randomkey());
+        static::assertEquals('key', $this->business->randomkey());
     }
 
-    public function testSort()
+    public function testSort(): void
     {
-        $this->assertEquals(array(), $this->business->sort('list'));
+        static::assertEquals([], $this->business->sort('list'));
 
         $list = $this->storage->getOrCreateList('list');
         $list->push('0');
@@ -138,12 +140,12 @@ class KeysTest extends TestCase
         $list->push('4');
         $list->push('12');
 
-        $this->assertEquals(array('0', '4', '8', '12'), $this->business->sort('list'));
-        $this->assertEquals(array('12', '8', '4', '0'), $this->business->sort('list', 'DESC'));
-        $this->assertEquals(array('0', '12', '4', '8'), $this->business->sort('list', 'ALPHA'));
+        static::assertEquals(['0', '4', '8', '12'], $this->business->sort('list'));
+        static::assertEquals(['12', '8', '4', '0'], $this->business->sort('list', 'DESC'));
+        static::assertEquals(['0', '12', '4', '8'], $this->business->sort('list', 'ALPHA'));
     }
 
-    public function testSortWords()
+    public function testSortWords(): void
     {
         $list = $this->storage->getOrCreateList('list');
         $list->push('dd');
@@ -151,16 +153,16 @@ class KeysTest extends TestCase
         $list->push('cc');
         $list->push('bb');
 
-        $this->assertEquals(array('aa', 'bb', 'cc', 'dd'), $this->business->sort('list', 'ALPHA'));
+        static::assertEquals(['aa', 'bb', 'cc', 'dd'], $this->business->sort('list', 'ALPHA'));
 
-        $this->setExpectedException('Exception');
+        $this->expectException(\Exception::class);
         $this->business->sort('list');
     }
 
-    public function testSortStore()
+    public function testSortStore(): void
     {
-        $this->assertEquals(0, $this->business->sort('list', 'STORE', 'target'));
-        $this->assertFalse($this->storage->hasKey('target'));
+        static::assertEquals(0, $this->business->sort('list', 'STORE', 'target'));
+        static::assertFalse($this->storage->hasKey('target'));
 
         $list = $this->storage->getOrCreateList('list');
         $list->push('0');
@@ -168,18 +170,18 @@ class KeysTest extends TestCase
         $list->push('4');
         $list->push('12');
 
-        $this->assertEquals(4, $this->business->sort('list', 'STORE', 'target'));
+        static::assertEquals(4, $this->business->sort('list', 'STORE', 'target'));
 
         $target = $this->storage->getOrCreateList('target');
 
-        $this->assertEquals('0', $target->shift());
-        $this->assertEquals('4', $target->shift());
-        $this->assertEquals('8', $target->shift());
-        $this->assertEquals('12', $target->shift());
-        $this->assertTrue($target->isEmpty());
+        static::assertEquals('0', $target->shift());
+        static::assertEquals('4', $target->shift());
+        static::assertEquals('8', $target->shift());
+        static::assertEquals('12', $target->shift());
+        static::assertTrue($target->isEmpty());
     }
 
-    public function testSortByLookup()
+    public function testSortByLookup(): void
     {
         $list = $this->storage->getOrCreateList('list');
         $list->push('three');
@@ -192,10 +194,10 @@ class KeysTest extends TestCase
         $this->storage->setString('weight_four', 4);
         $this->storage->setString('weight_two', 2);
 
-        $this->assertEquals(array('one', 'two', 'three', 'four'), $this->business->sort('list', 'BY', 'weight_*'));
+        static::assertEquals(['one', 'two', 'three', 'four'], $this->business->sort('list', 'BY', 'weight_*'));
     }
 
-    public function testSortByLookupUnknown()
+    public function testSortByLookupUnknown(): void
     {
         $list = $this->storage->getOrCreateList('list');
         $list->push('three');
@@ -203,10 +205,10 @@ class KeysTest extends TestCase
         $list->push('four');
         $list->push('two');
 
-        $this->assertEquals(array('four', 'one', 'three', 'two'), $this->business->sort('list', 'BY', 'unknown_*'));
+        static::assertEquals(['four', 'one', 'three', 'two'], $this->business->sort('list', 'BY', 'unknown_*'));
     }
 
-    public function testSortByLookupNosort()
+    public function testSortByLookupNosort(): void
     {
         $list = $this->storage->getOrCreateList('list');
         $list->push('three');
@@ -214,10 +216,10 @@ class KeysTest extends TestCase
         $list->push('four');
         $list->push('two');
 
-        $this->assertEquals(array('three', 'one', 'four', 'two'), $this->business->sort('list', 'BY', 'nosort'));
+        static::assertEquals(['three', 'one', 'four', 'two'], $this->business->sort('list', 'BY', 'nosort'));
     }
 
-    public function testSortGetLookup()
+    public function testSortGetLookup(): void
     {
         $list = $this->storage->getOrCreateList('list');
         $list->push('3');
@@ -228,12 +230,12 @@ class KeysTest extends TestCase
         $this->storage->setString('name_2', 'two');
         $this->storage->setString('name_3', 'three');
 
-        $this->assertEquals(array('1', '2', '3'), $this->business->sort('list', 'GET', '#'));
-        $this->assertEquals(array('one', 'two', 'three'), $this->business->sort('list', 'GET', 'name_*'));
-        $this->assertEquals(array('one', '1', null, 'two', '2', null, 'three', '3', null), $this->business->sort('list', 'GET', 'name_*', 'GET', '#', 'GET', 'unknown'));
+        static::assertEquals(['1', '2', '3'], $this->business->sort('list', 'GET', '#'));
+        static::assertEquals(['one', 'two', 'three'], $this->business->sort('list', 'GET', 'name_*'));
+        static::assertEquals(['one', '1', null, 'two', '2', null, 'three', '3', null], $this->business->sort('list', 'GET', 'name_*', 'GET', '#', 'GET', 'unknown'));
     }
 
-    public function testSortLimit()
+    public function testSortLimit(): void
     {
         $list = $this->storage->getOrCreateList('list');
         $list->push('3');
@@ -241,62 +243,62 @@ class KeysTest extends TestCase
         $list->push('2');
         $list->push('4');
 
-        $this->assertEquals(array('1', '2'), $this->business->sort('list', 'LIMIT', '0', '2'));
-        $this->assertEquals(array('3', '4'), $this->business->sort('list', 'LIMIT', '2', '2'));
+        static::assertEquals(['1', '2'], $this->business->sort('list', 'LIMIT', '0', '2'));
+        static::assertEquals(['3', '4'], $this->business->sort('list', 'LIMIT', '2', '2'));
 
-        $this->assertEquals(array('3', '4'), $this->business->sort('list', 'LIMIT', '2', '100'));
-        $this->assertEquals(array(), $this->business->sort('list', 'LIMIT', '100', '100'));
+        static::assertEquals(['3', '4'], $this->business->sort('list', 'LIMIT', '2', '100'));
+        static::assertEquals([], $this->business->sort('list', 'LIMIT', '100', '100'));
     }
 
-    public function testSortGetWinsOverLimit()
+    public function testSortGetWinsOverLimit(): void
     {
         $list = $this->storage->getOrCreateList('list');
         $list->push('3');
         $list->push('1');
         $list->push('2');
 
-        $this->assertEquals(array('1', '1', '2', '2'), $this->business->sort('list', 'GET', '#', 'GET', '#', 'LIMIT', '0', '2'));
+        static::assertEquals(['1', '1', '2', '2'], $this->business->sort('list', 'GET', '#', 'GET', '#', 'LIMIT', '0', '2'));
     }
 
-    public function testStorage()
+    public function testStorage(): void
     {
-        $this->assertFalse($this->business->exists('test'));
+        static::assertFalse($this->business->exists('test'));
 
         $this->storage->setString('test', 'value');
 
-        $this->assertTrue($this->business->exists('test'));
+        static::assertTrue($this->business->exists('test'));
     }
 
-    public function testDel()
+    public function testDel(): void
     {
-        $this->assertEquals(0, $this->business->del('a', 'b', 'c'));
+        static::assertEquals(0, $this->business->del('a', 'b', 'c'));
 
         $this->storage->setString('a', 'a');
         $this->storage->setString('c', 'c');
 
-        $this->assertEquals(2, $this->business->del('a', 'b', 'c', 'd'));
+        static::assertEquals(2, $this->business->del('a', 'b', 'c', 'd'));
     }
 
     /**
-     * @expectedException Exception
-     * @expectedExceptionMessage ERR value is not an integer or out of range
      * @dataProvider provideInvalidIntegerArgument
      */
-    public function testInvalidIntegerArgument($method, $arg0)
+    public function testInvalidIntegerArgument($method, $arg0): void
     {
+        $this->expectException(\TypeError::class);
+        $this->expectExceptionMessage("Argument 2 passed to Clue\Redis\Server\Business\Keys::$method() must be of the type int, string given");
         $args = func_get_args();
         unset($args[0]);
 
-        call_user_func_array(array($this->business, $method), $args);
+        call_user_func_array([$this->business, $method], $args);
     }
 
     public function provideInvalidIntegerArgument()
     {
-        return array(
-            array('expire', 'key', 'invalid'),
-            array('expireat', 'key', 'invalid'),
-            array('pexpire', 'key', 'invalid'),
-            array('pexpireat', 'key', 'invalid'),
-        );
+        return [
+            ['expire', 'key', 'invalid'],
+            ['expireat', 'key', 'invalid'],
+            ['pexpire', 'key', 'invalid'],
+            ['pexpireat', 'key', 'invalid'],
+        ];
     }
 }

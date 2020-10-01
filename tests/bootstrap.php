@@ -1,22 +1,27 @@
 <?php
 
-(include_once __DIR__ . '/../vendor/autoload.php') OR die(PHP_EOL . 'ERROR: composer autoloader not found, run "composer install" or see README for instructions' . PHP_EOL);
+declare(strict_types=1);
 
-class TestCase extends PHPUnit_Framework_TestCase
+namespace Clue\Redis\Server\Tests;
+
+use PHPUnit\Framework\MockObject\MockObject;
+
+(include_once __DIR__ . '/../vendor/autoload.php') or die(PHP_EOL . 'ERROR: composer autoloader not found, run "composer install" or see README for instructions' . PHP_EOL);
+
+class TestCase extends \PHPUnit\Framework\TestCase
 {
     protected function expectCallableOnce()
     {
         $mock = $this->createCallableMock();
 
-
         if (func_num_args() > 0) {
             $mock
-                ->expects($this->once())
+                ->expects(static::once())
                 ->method('__invoke')
-                ->with($this->equalTo(func_get_arg(0)));
+                ->with(static::equalTo(func_get_arg(0)));
         } else {
             $mock
-                ->expects($this->once())
+                ->expects(static::once())
                 ->method('__invoke');
         }
 
@@ -27,7 +32,7 @@ class TestCase extends PHPUnit_Framework_TestCase
     {
         $mock = $this->createCallableMock();
         $mock
-            ->expects($this->never())
+            ->expects(static::never())
             ->method('__invoke');
 
         return $mock;
@@ -37,27 +42,27 @@ class TestCase extends PHPUnit_Framework_TestCase
     {
         $mock = $this->createCallableMock();
         $mock
-            ->expects($this->once())
+            ->expects(static::once())
             ->method('__invoke')
-            ->with($this->isInstanceOf($type));
+            ->with(static::isInstanceOf($type));
 
         return $mock;
     }
 
     /**
-     * @link https://github.com/reactphp/react/blob/master/tests/React/Tests/Socket/TestCase.php (taken from reactphp/react)
+     * @see https://github.com/reactphp/react/blob/master/tests/React/Tests/Socket/TestCase.php (taken from reactphp/react)
      */
-    protected function createCallableMock()
+    protected function createCallableMock(): MockObject
     {
-        return $this->getMock('CallableStub');
+        return $this->getMockBuilder(CallableStub::class)->getMock();
     }
 
     protected function expectPromiseResolve($promise)
     {
-        $this->assertInstanceOf('React\Promise\PromiseInterface', $promise);
+        static::assertInstanceOf('React\Promise\PromiseInterface', $promise);
 
         $that = $this;
-        $promise->then(null, function($error) use ($that) {
+        $promise->then(null, function ($error) use ($that): void {
             $that->assertNull($error);
             $that->fail('promise rejected');
         });
@@ -68,10 +73,10 @@ class TestCase extends PHPUnit_Framework_TestCase
 
     protected function expectPromiseReject($promise)
     {
-        $this->assertInstanceOf('React\Promise\PromiseInterface', $promise);
+        static::assertInstanceOf(\React\Promise\PromiseInterface::class, $promise);
 
         $that = $this;
-        $promise->then(function($value) use ($that) {
+        $promise->then(function ($value) use ($that): void {
             $that->assertNull($value);
             $that->fail('promise resolved');
         });
@@ -84,8 +89,7 @@ class TestCase extends PHPUnit_Framework_TestCase
 
 class CallableStub
 {
-    public function __invoke()
+    public function __invoke(): void
     {
     }
 }
-

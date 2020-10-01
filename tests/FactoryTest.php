@@ -1,20 +1,29 @@
 <?php
 
-use Clue\Redis\Server\Server;
+declare(strict_types=1);
+
+namespace Clue\Redis\Server\Tests;
+
 use Clue\Redis\Server\Factory;
+use Clue\Redis\Server\Server;
+use React\EventLoop\StreamSelectLoop;
 
 class FactoryTest extends TestCase
 {
-    public function setUp()
+    private ?StreamSelectLoop $loop;
+
+    private ?Factory $factory;
+
+    public function setUp(): void
     {
-        $this->loop = new React\EventLoop\StreamSelectLoop();
+        $this->loop = new StreamSelectLoop();
         $this->factory = new Factory($this->loop);
     }
 
-    public function testPairAuthRejectDisconnects()
+    public function testPairAuthRejectDisconnects(): void
     {
         if (defined('HPHP_VERSION')) {
-            $this->markTestSkipped();
+            static::markTestSkipped();
         }
 
         $server = null;
@@ -23,12 +32,12 @@ class FactoryTest extends TestCase
         $address = '127.0.0.1:0';
 
         // start a server that only sends ERR messages.
-        $this->factory->createServer($address)->then(function (Server $s) use (&$server) {
+        $this->factory->createServer($address)->then(function (Server $s) use (&$server): void {
             $server = $s;
         });
 
-        $this->assertNotNull($server, 'Server instance must be set by now');
-        $this->assertNotNull($server->getLocalAddress());
+        static::assertNotNull($server, 'Server instance must be set by now');
+        static::assertNotNull($server->getLocalAddress());
 
         // we expect a single single client
         $server->on('connection', $this->expectCallableOnce());
@@ -37,7 +46,7 @@ class FactoryTest extends TestCase
         $server->on('disconnection', $this->expectCallableOnce());
 
         // end the loop (stop ticking)
-        $server->on('disconnection', function() use ($server) {
+        $server->on('disconnection', function () use ($server): void {
             $server->close();
         });
 
@@ -49,17 +58,19 @@ class FactoryTest extends TestCase
         $this->loop->run();
     }
 
-    public function testServerAddressInvalidFail()
+    public function testServerAddressInvalidFail(): void
     {
         $promise = $this->factory->createServer('invalid address');
 
         $this->expectPromiseReject($promise);
     }
 
-    public function testServerAddressInUseFail()
+    public function testServerAddressInUseFail(): void
     {
-        $promise = $this->factory->createServer('tcp://localhost:6379');
+        $this->factory->createServer('tcp://localhost:6379')->then(function (): void {
+            $promise = $this->factory->createServer('tcp://localhost:6379');
 
-        $this->expectPromiseReject($promise);
+            $this->expectPromiseReject($promise);
+        });
     }
 }

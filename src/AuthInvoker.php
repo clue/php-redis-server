@@ -1,28 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Clue\Redis\Server;
 
-use Clue\Redis\Server\Invoker;
 use Clue\Redis\Protocol\Model\Request;
-use Clue\Redis\Server\Client;
 
 class AuthInvoker extends Invoker
 {
-    private $invoker;
+    private Invoker $invoker;
 
     public function __construct(Invoker $successfulInvoker)
     {
         $this->invoker = $successfulInvoker;
     }
 
-    public function getSuccessfulInvoker()
+    public function getSuccessfulInvoker(): Invoker
     {
         return $this->invoker;
     }
 
-    public function invoke(Request $request, Client $client)
+    public function invoke(Request $request, Client $client): string
     {
-        $command = strtolower($request->getCommand());
+        $command = mb_strtolower($request->getCommand());
 
         if ($command !== 'auth') {
             // should be after checking number of args:

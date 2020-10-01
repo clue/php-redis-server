@@ -1,112 +1,118 @@
 <?php
 
-use Clue\Redis\Server\Storage;
+declare(strict_types=1);
+
+namespace Clue\Redis\Server\Tests\Server\Business;
+
 use Clue\Redis\Server\Business\Lists;
+use Clue\Redis\Server\Storage;
+use Clue\Redis\Server\Tests\TestCase;
 
 class ListsTest extends TestCase
 {
     private $business;
+
     private $storage;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->storage = new Storage();
         $this->business = new Lists($this->storage);
     }
 
-    public function testList()
+    public function testList(): void
     {
-        $this->assertEquals(0, $this->business->llen('list'));
+        static::assertEquals(0, $this->business->llen('list'));
 
-        $this->assertEquals(1, $this->business->rpush('list', 'b'));
-        $this->assertEquals(2, $this->business->rpush('list', 'c'));
-        $this->assertEquals(3, $this->business->lpush('list', 'a'));
+        static::assertEquals(1, $this->business->rpush('list', 'b'));
+        static::assertEquals(2, $this->business->rpush('list', 'c'));
+        static::assertEquals(3, $this->business->lpush('list', 'a'));
 
-        $this->assertEquals(3, $this->business->llen('list'));
+        static::assertEquals(3, $this->business->llen('list'));
 
-        $this->assertEquals('c', $this->business->rpop('list'));
-        $this->assertEquals('a', $this->business->lpop('list'));
-        $this->assertEquals('b', $this->business->lpop('list'));
+        static::assertEquals('c', $this->business->rpop('list'));
+        static::assertEquals('a', $this->business->lpop('list'));
+        static::assertEquals('b', $this->business->lpop('list'));
 
-        $this->assertNull($this->business->lpop('list'));
+        static::assertNull($this->business->lpop('list'));
 
-        $this->assertFalse($this->storage->hasKey('list'));
+        static::assertFalse($this->storage->hasKey('list'));
 
-        $this->assertEquals(1, $this->business->rpush('list', 'a'));
-        $this->assertEquals('a', $this->business->rpop('list'));
-        $this->assertEquals(null, $this->business->rpop('list'));
+        static::assertEquals(1, $this->business->rpush('list', 'a'));
+        static::assertEquals('a', $this->business->rpop('list'));
+        static::assertNull($this->business->rpop('list'));
 
-        $this->assertFalse($this->storage->hasKey('list'));
+        static::assertFalse($this->storage->hasKey('list'));
     }
 
-    public function testLpushOrder()
+    public function testLpushOrder(): void
     {
-        $this->assertEquals(3, $this->business->lpush('list', 'a', 'b', 'c'));
-        $this->assertEquals('c', $this->business->lpop('list'));
-        $this->assertEquals('b', $this->business->lpop('list'));
-        $this->assertEquals('a', $this->business->lpop('list'));
-        $this->assertNull($this->business->lpop('list'));
+        static::assertEquals(3, $this->business->lpush('list', 'a', 'b', 'c'));
+        static::assertEquals('c', $this->business->lpop('list'));
+        static::assertEquals('b', $this->business->lpop('list'));
+        static::assertEquals('a', $this->business->lpop('list'));
+        static::assertNull($this->business->lpop('list'));
     }
 
-    public function testPushX()
+    public function testPushX(): void
     {
-        $this->assertEquals(0, $this->business->lpushx('list', 'a'));
-        $this->assertEquals(0, $this->business->rpushx('list', 'b'));
-        $this->assertFalse($this->storage->hasKey('list'));
+        static::assertEquals(0, $this->business->lpushx('list', 'a'));
+        static::assertEquals(0, $this->business->rpushx('list', 'b'));
+        static::assertFalse($this->storage->hasKey('list'));
 
-        $this->assertEquals(1, $this->business->lpush('list', 'c'));
+        static::assertEquals(1, $this->business->lpush('list', 'c'));
 
-        $this->assertEquals(2, $this->business->lpushx('list', 'd'));
-        $this->assertEquals(3, $this->business->rpushx('list', 'e'));
+        static::assertEquals(2, $this->business->lpushx('list', 'd'));
+        static::assertEquals(3, $this->business->rpushx('list', 'e'));
 
-        $this->assertEquals('d', $this->business->lpop('list'));
-        $this->assertEquals('c', $this->business->lpop('list'));
-        $this->assertEquals('e', $this->business->lpop('list'));
+        static::assertEquals('d', $this->business->lpop('list'));
+        static::assertEquals('c', $this->business->lpop('list'));
+        static::assertEquals('e', $this->business->lpop('list'));
     }
 
-    public function testRpopLpush()
+    public function testRpopLpush(): void
     {
-        $this->assertNull($this->business->rpoplpush('a', 'b'));
-        $this->assertFalse($this->storage->hasKey('b'));
+        static::assertNull($this->business->rpoplpush('a', 'b'));
+        static::assertFalse($this->storage->hasKey('b'));
 
-        $this->assertEquals(3, $this->business->rpush('a', '1', '2', '3'));
+        static::assertEquals(3, $this->business->rpush('a', '1', '2', '3'));
 
-        $this->assertEquals('3', $this->business->rpoplpush('a', 'b'));
-        $this->assertTrue($this->storage->hasKey('b'));
+        static::assertEquals('3', $this->business->rpoplpush('a', 'b'));
+        static::assertTrue($this->storage->hasKey('b'));
 
-        $this->assertEquals('2', $this->business->rpoplpush('a', 'b'));
-        $this->assertEquals('1', $this->business->rpoplpush('a', 'b'));
+        static::assertEquals('2', $this->business->rpoplpush('a', 'b'));
+        static::assertEquals('1', $this->business->rpoplpush('a', 'b'));
 
-        $this->assertFalse($this->storage->hasKey('a'));
+        static::assertFalse($this->storage->hasKey('a'));
     }
 
-    public function testLindex()
+    public function testLindex(): void
     {
-        $this->assertNull($this->business->lindex('list', 1));
+        static::assertNull($this->business->lindex('list', 1));
 
         $this->business->rpush('list', 'a', 'b', 'c');
 
-        $this->assertEquals('a', $this->business->lindex('list', 0));
-        $this->assertEquals('c', $this->business->lindex('list', 2));
-        $this->assertEquals('c', $this->business->lindex('list', -1));
-        $this->assertEquals('a', $this->business->lindex('list', -3));
+        static::assertEquals('a', $this->business->lindex('list', 0));
+        static::assertEquals('c', $this->business->lindex('list', 2));
+        static::assertEquals('c', $this->business->lindex('list', -1));
+        static::assertEquals('a', $this->business->lindex('list', -3));
 
-        $this->assertNull($this->business->lindex('list', 3));
-        $this->assertNull($this->business->lindex('list', -4));
+        static::assertNull($this->business->lindex('list', 3));
+        static::assertNull($this->business->lindex('list', -4));
     }
 
-    public function testLrange()
+    public function testLrange(): void
     {
-        $this->assertEquals(array(), $this->business->lrange('list', '0', '100'));
+        static::assertEquals([], $this->business->lrange('list', 0, 100));
 
         $this->business->rpush('list', 'a', 'b', 'c', 'd');
 
-        $this->assertEquals(array('b', 'c'), $this->business->lrange('list', '1', '2'));
-        $this->assertEquals(array('c', 'd'), $this->business->lrange('list', '2', '100'));
-        $this->assertEquals(array('a'), $this->business->lrange('list', '0', '0'));
-        $this->assertEquals(array('d'), $this->business->lrange('list', '-1', '-1'));
+        static::assertEquals(['b', 'c'], $this->business->lrange('list', 1, 2));
+        static::assertEquals(['c', 'd'], $this->business->lrange('list', 2, 100));
+        static::assertEquals(['a'], $this->business->lrange('list', 0, 0));
+        static::assertEquals(['d'], $this->business->lrange('list', -1, -1));
 
-        $this->assertEquals(array(), $this->business->lrange('list', '2', '1'));
-        $this->assertEquals(array(), $this->business->lrange('list', '100', '200'));
+        static::assertEquals([], $this->business->lrange('list', 2, 1));
+        static::assertEquals([], $this->business->lrange('list', 100, 200));
     }
 }

@@ -1,19 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
+namespace Clue\Redis\Server\Tests\Server\Business;
+
 use Clue\Redis\Server\Business\Connection;
+use Clue\Redis\Server\Server;
+use Clue\Redis\Server\Tests\TestCase;
 
 class ConnectionTest extends TestCase
 {
     private $business;
 
-    public function setUp()
+    public function setUp(): void
     {
-        $server = $this->getMockBuilder('Clue\Redis\Server\Server')->disableOriginalConstructor()->getMock();
+        /** @var Server $server */
+        $server = $this->getMockBuilder(Server::class)->disableOriginalConstructor()->getMock();
         $this->business = new Connection($server);
     }
 
-    public function testPing()
+    public function testPing(): void
     {
-        $this->assertEquals('PONG', $this->business->ping());
+        static::assertEquals('PONG', $this->business->ping());
     }
 }
