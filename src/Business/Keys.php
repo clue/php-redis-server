@@ -1,31 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Clue\Redis\Server\Business;
 
+use Clue\Redis\Server\Client;
 use Clue\Redis\Server\Storage;
 use Exception;
-use InvalidArgumentException;
-use Clue\Redis\Server\Client;
 
 class Keys
 {
-    private $storage;
+    private Storage $storage;
 
-    public function __construct(Storage $storage = null)
+    public function __construct(?Storage $storage = null)
     {
-        if ($storage === null) {
-            $storage = new Storage();
-        }
-        $this->storage = $storage;
+        $this->storage = $storage ?? new Storage();
     }
 
-    public function keys($pattern)
+    public function keys(string $pattern): array
     {
-        $ret = array();
+        $ret = [];
 
         foreach ($this->storage->getAllKeys() as $key) {
-            if(fnmatch($pattern, $key)) {
-                $ret []= $key;
+            if (fnmatch($pattern, $key)) {
+                $ret[] = $key;
             }
         }
 
@@ -37,40 +35,41 @@ class Keys
         return $this->storage->getRandomKey();
     }
 
-    public function sort($key)
+    public function sort(string $key)
     {
         if ($this->storage->hasKey($key)) {
-            $list = iterator_to_array($this->storage->getOrCreateList($key), false);
+            $list = [...$this->storage->getOrCreateList($key)];
         } else {
             // no need to sort, but validate arguments in order to be consistent with reference implementation
-            $list = array();
+            $list = [];
         }
 
-        $by     = null;
+        $by = null;
         $offset = null;
-        $count  = null;
-        $get    = array();
-        $desc   = false;
-        $sort   = SORT_NUMERIC;
-        $store  = null;
+        $count = null;
+        $get = [];
+        $desc = false;
+        $sort = SORT_NUMERIC;
+        $store = null;
 
         $args = func_get_args();
-        $next = function() use (&$args, &$i) {
+        $next = function () use (&$args, &$i) {
             if (!isset($args[$i + 1])) {
                 throw new Exception('ERR syntax error');
             }
+
             return $args[++$i];
         };
         for ($i = 1, $l = count($args); $i < $l; ++$i) {
-            $arg = strtoupper($args[$i]);
+            $arg = mb_strtoupper($args[$i]);
 
             if ($arg === 'BY') {
                 $by = $next();
             } elseif ($arg === 'LIMIT') {
                 $offset = $this->coerceInteger($next());
-                $count  = $this->coerceInteger($next());
+                $count = $this->coerceInteger($next());
             } elseif ($arg === 'GET') {
-                $get []= $next();
+                $get[] = $next();
             } elseif ($arg === 'ASC' || $arg === 'DESC') {
                 $desc = ($arg === 'DESC');
             } elseif ($arg === 'ALPHA') {
@@ -83,12 +82,13 @@ class Keys
         }
 
         if ($sort === SORT_NUMERIC) {
-            $cmp = function($a, $b) {
-                $fa = (float)$a;
-                $fb = (float)$b;
-                if ((string)$fa !== $a || (string)$fb !== $b) {
+            $cmp = function ($a, $b) {
+                $fa = (float) $a;
+                $fb = (float) $b;
+                if ((string) $fa !== $a || (string) $fb !== $b) {
                     throw new Exception('ERR One or more scores can\'t be converted into double');
                 }
+
                 return ($fa < $fb) ? -1 : (($fa > $fb) ? 1 : 0);
             };
         } else {
@@ -96,13 +96,13 @@ class Keys
         }
 
         if ($by !== null) {
-            $pos = strpos($by, '*');
+            $pos = mb_strpos($by, '*');
             if ($pos === false) {
                 $cmp = null;
             } else {
                 $cmp = 'strcmp';
 
-                $lookup = array();
+                $lookup = [];
                 foreach (array_unique($list) as $v) {
                     $key = str_replace('*', $v, $by);
                     $lookup[$v] = $this->storage->getStringOrNull($key);
@@ -111,9 +111,7 @@ class Keys
                     }
                 }
 
-                $cmp = function($a, $b) use ($cmp, $lookup){
-                    return $cmp($lookup[$a], $lookup[$b]);
-                };
+                $cmp = fn ($a, $b) => $cmp($lookup[$a], $lookup[$b]);
             }
         }
 
@@ -131,14 +129,14 @@ class Keys
 
         if ($get) {
             $storage = $this->storage;
-            $lookup = function($key, $pattern) use ($storage) {
+            $lookup = function ($key, $pattern) use ($storage) {
                 if ($pattern === '#') {
                     return $key;
                 }
 
                 $l = str_replace('*', $key, $pattern);
 
-                static $cached = array();
+                static $cached = [];
 
                 if (!array_key_exists($l, $cached)) {
                     $cached[$l] = $storage->getStringOrNull($l);
@@ -147,11 +145,11 @@ class Keys
                 return $cached[$l];
             };
             $keys = $list;
-            $list = array();
+            $list = [];
 
             foreach ($keys as $key) {
                 foreach ($get as $pattern) {
-                    $list []= $lookup($key, $pattern);
+                    $list[] = $lookup($key, $pattern);
                 }
             }
         }
@@ -175,56 +173,57 @@ class Keys
         return $list;
     }
 
-    public function persist($key)
+    public function persist(string $key): bool
     {
         if ($this->storage->hasKey($key)) {
             $timeout = $this->storage->getTimeout($key);
 
             if ($timeout !== null) {
                 $this->storage->setTimeout($key, null);
+
                 return true;
             }
         }
+
         return false;
     }
 
-    public function expire($key, $seconds)
+    public function expire(string $key, int $seconds): bool
     {
-        return $this->pexpireat($key, (int)(1000 * (microtime(true) + $this->coerceInteger($seconds))));
+        return $this->pexpireat($key, (int) (1_000 * (microtime(true) + $seconds)));
     }
 
-    public function expireat($key, $timestamp)
+    public function expireat(string $key, int $timestamp): bool
     {
-        return $this->pexpireat($key, 1000 * $this->coerceInteger($timestamp));
+        return $this->pexpireat($key, 1_000 * $timestamp);
     }
 
-    public function pexpire($key, $milliseconds)
+    public function pexpire(string $key, int $milliseconds): bool
     {
-        return $this->pexpireat($key, (int)(1000 * microtime(true)) + $this->coerceInteger($milliseconds));
+        return $this->pexpireat($key, (int) (1_000 * microtime(true)) + $milliseconds);
     }
 
-    public function pexpireat($key, $millisecondTimestamp)
+    public function pexpireat(string $key, int $millisecondTimestamp): bool
     {
-        $millisecondTimestamp = $this->coerceInteger($millisecondTimestamp);
-
         if (!$this->storage->hasKey($key)) {
             return false;
         }
-        $this->storage->setTimeout($key, $millisecondTimestamp / 1000);
+        $this->storage->setTimeout($key, (int) ($millisecondTimestamp / 1_000));
 
         return true;
     }
 
-    public function ttl($key)
+    public function ttl(string $key): int
     {
         $pttl = $this->pttl($key);
         if ($pttl > 0) {
-            $pttl = (int)($pttl / 1000);
+            $pttl = (int) ($pttl / 1_000);
         }
+
         return $pttl;
     }
 
-    public function pttl($key)
+    public function pttl(string $key): int
     {
         if (!$this->storage->hasKey($key)) {
             return -2;
@@ -235,15 +234,15 @@ class Keys
             return -1;
         }
 
-        $milliseconds = 1000 * ($timeout - microtime(true));
+        $milliseconds = 1_000 * ($timeout - microtime(true));
         if ($milliseconds < 0) {
             $milliseconds = 0;
         }
 
-        return (int)$milliseconds;
+        return (int) $milliseconds;
     }
 
-    public function del($key0)
+    public function del(string $key): int
     {
         $n = 0;
 
@@ -257,13 +256,13 @@ class Keys
         return $n;
     }
 
-    public function exists($key)
+    public function exists(string $key): bool
     {
         return $this->storage->hasKey($key);
     }
 
     // StatusReply
-    public function rename($key, $newkey)
+    public function rename(string $key, string $newkey): bool
     {
         if ($key === $newkey) {
             throw new Exception('ERR source and destination objects are the same');
@@ -280,7 +279,7 @@ class Keys
         return true;
     }
 
-    public function renamenx($key, $newkey)
+    public function renamenx(string $key, string $newkey): bool
     {
         if ($key === $newkey) {
             throw new Exception('ERR source and destination objects are the same');
@@ -298,7 +297,7 @@ class Keys
     }
 
     // StatusReply
-    public function type($key)
+    public function type(string $key): string
     {
         if (!$this->storage->hasKey($key)) {
             return 'none';
@@ -309,22 +308,22 @@ class Keys
             return 'string';
         } elseif ($value instanceof \SplDoublyLinkedList) {
             return 'list';
-        } else {
-            throw new UnexpectedValueException('Unknown datatype encountered');
         }
+        throw new \UnexpectedValueException('Unknown datatype encountered');
     }
 
-    private function coerceInteger($value)
-    {
-        $int = (int)$value;
-        if ((string)$int !== (string)$value) {
-            throw new Exception('ERR value is not an integer or out of range');
-        }
-        return $int;
-    }
-
-    public function setClient(Client $client)
+    public function setClient(Client $client): void
     {
         $this->storage = $client->getDatabase();
+    }
+
+    private function coerceInteger($value): int
+    {
+        $int = (int) $value;
+        if ((string) $int !== (string) $value) {
+            throw new Exception('ERR value is not an integer or out of range');
+        }
+
+        return $int;
     }
 }

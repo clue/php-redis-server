@@ -1,79 +1,79 @@
 <?php
 
-use Clue\Redis\Server\Storage;
+declare(strict_types=1);
+
+namespace Clue\Redis\Server\Tests\Server;
+
 use Clue\Redis\Server\InvalidDatatypeException;
+use Clue\Redis\Server\Storage;
+use Clue\Redis\Server\Tests\TestCase;
 
 class StorageTest extends TestCase
 {
     private $storage;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->storage = new Storage();
     }
 
-    public function testHasSetUnset()
+    public function testHasSetUnset(): void
     {
-        $this->assertFalse($this->storage->hasKey('key'));
+        static::assertFalse($this->storage->hasKey('key'));
 
         $this->storage->setString('key', 'value');
-        $this->assertTrue($this->storage->hasKey('key'));
+        static::assertTrue($this->storage->hasKey('key'));
 
         $this->storage->unsetKey('key');
-        $this->assertFalse($this->storage->hasKey('key'));
-
+        static::assertFalse($this->storage->hasKey('key'));
     }
 
-    public function testString()
+    public function testString(): void
     {
-        $this->assertEquals(null, $this->storage->getStringOrNull('key'));
+        static::assertNull($this->storage->getStringOrNull('key'));
 
         $this->storage->setString('key', 'value');
 
-        $this->assertEquals('value', $this->storage->getStringOrNull('key'));
+        static::assertEquals('value', $this->storage->getStringOrNull('key'));
     }
 
-    public function testList()
+    public function testList(): void
     {
         // empty list will be created on first access
         $list = $this->storage->getOrCreateList('list');
-        $this->assertInstanceOf('SplDoublyLinkedList', $list);
-        $this->assertTrue($list->isEmpty());
+        static::assertInstanceOf('SplDoublyLinkedList', $list);
+        static::assertTrue($list->isEmpty());
 
         // further calls return the same list
-        $this->assertSame($list, $this->storage->getOrCreateList('list'));
+        static::assertSame($list, $this->storage->getOrCreateList('list'));
     }
 
-    public function testKeys()
+    public function testKeys(): void
     {
-        $this->assertEquals(array(), $this->storage->getAllKeys());
-        $this->assertNull($this->storage->getRandomKey());
+        static::assertEquals([], $this->storage->getAllKeys());
+        static::assertNull($this->storage->getRandomKey());
 
         $this->storage->setString('a', '1');
         $this->storage->setString('b', '2');
 
-        $this->assertEquals(array('a', 'b'), $this->storage->getAllKeys());
+        static::assertEquals(['a', 'b'], $this->storage->getAllKeys());
 
         $this->storage->setTimeout('b', 0);
 
-        $this->assertEquals(array('a'), $this->storage->getAllKeys());
-        $this->assertEquals('a', $this->storage->getRandomKey());
+        static::assertEquals(['a'], $this->storage->getAllKeys());
+        static::assertEquals('a', $this->storage->getRandomKey());
     }
 
-    /**
-     * @expectedException Clue\Redis\Server\InvalidDatatypeException
-     */
-    public function testInvalidList()
+    public function testInvalidList(): void
     {
+        $this->expectException(InvalidDatatypeException::class);
         $this->storage->setString('string', 'value');
         $this->storage->getOrCreateList('string');
     }
 
-    /**
-     * @expectedException Clue\Redis\Server\InvalidDatatypeException
-     */
-    public function testInvalidString()
+    public function testInvalidString(): void
     {
+        $this->expectException(InvalidDatatypeException::class);
         $this->storage->getOrCreateList('list');
         $this->storage->getStringOrNull('list');
     }

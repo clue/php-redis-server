@@ -1,49 +1,58 @@
 <?php
 
+declare(strict_types=1);
+
+namespace Clue\Redis\Server\Tests\Server;
+
+use Clue\Redis\Protocol\Serializer\RecursiveSerializer;
 use Clue\Redis\Server\Client;
 use Clue\Redis\Server\Invoker;
-use Clue\Redis\Protocol\Serializer\RecursiveSerializer;
 use Clue\Redis\Server\Storage;
+use Clue\Redis\Server\Tests\TestCase;
+use React\Socket\Connection;
 
 class ClientTest extends TestCase
 {
     private $business;
+
     private $database;
+
     private $client;
 
-    public function setUp()
+    public function setUp(): void
     {
-        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->getMock();
+        /** @var Connection $connection */
+        $connection = $this->getMockBuilder(Connection::class)->disableOriginalConstructor()->getMock();
 
         $this->business = new Invoker(new RecursiveSerializer());
         $this->database = new Storage();
         $this->client = new Client($connection, $this->business, $this->database);
     }
 
-    public function testBusiness()
+    public function testBusiness(): void
     {
-        $this->assertSame($this->business, $this->client->getBusiness());
+        static::assertSame($this->business, $this->client->getBusiness());
 
         $business = new Invoker(new RecursiveSerializer());
 
         $this->client->setBusiness($business);
-        $this->assertSame($business, $this->client->getBusiness());
+        static::assertSame($business, $this->client->getBusiness());
     }
 
-    public function testDatabase()
+    public function testDatabase(): void
     {
-        $this->assertSame($this->database, $this->client->getDatabase());
+        static::assertSame($this->database, $this->client->getDatabase());
 
         $database = new Storage();
 
         $this->client->setDatabase($database);
-        $this->assertSame($database, $this->client->getDatabase());
+        static::assertSame($database, $this->client->getDatabase());
     }
 
-    public function testName()
+    public function testName(): void
     {
-        $this->assertNull($this->client->getName());
+        static::assertNull($this->client->getName());
         $this->client->setName('name');
-        $this->assertEquals('name', $this->client->getName());
+        static::assertEquals('name', $this->client->getName());
     }
 }

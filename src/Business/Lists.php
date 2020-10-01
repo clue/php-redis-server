@@ -1,25 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Clue\Redis\Server\Business;
 
-use Clue\Redis\Server\Storage;
-use Exception;
-use InvalidArgumentException;
 use Clue\Redis\Server\Client;
+use Clue\Redis\Server\Storage;
 
 class Lists
 {
-    private $storage;
+    private Storage $storage;
 
-    public function __construct(Storage $storage = null)
+    public function __construct(?Storage $storage = null)
     {
-        if ($storage === null) {
-            $storage = new Storage();
-        }
-        $this->storage = $storage;
+        $this->storage = $storage ?? new Storage();
     }
 
-    public function lpush($key, $value0)
+    public function lpush(string $key, $value): int
     {
         $list = $this->storage->getOrCreateList($key);
 
@@ -33,7 +30,7 @@ class Lists
         return $list->count();
     }
 
-    public function lpushx($key, $value)
+    public function lpushx(string $key, $value): int
     {
         if (!$this->storage->hasKey($key)) {
             return 0;
@@ -42,7 +39,7 @@ class Lists
         return $this->lpush($key, $value);
     }
 
-    public function rpush($key, $value0)
+    public function rpush(string $key, $value): int
     {
         $list = $this->storage->getOrCreateList($key);
 
@@ -56,7 +53,7 @@ class Lists
         return $list->count();
     }
 
-    public function rpushx($key, $value)
+    public function rpushx(string $key, $value): int
     {
         if (!$this->storage->hasKey($key)) {
             return 0;
@@ -65,7 +62,7 @@ class Lists
         return $this->rpush($key, $value);
     }
 
-    public function lpop($key)
+    public function lpop(string $key)
     {
         if (!$this->storage->hasKey($key)) {
             return null;
@@ -82,7 +79,7 @@ class Lists
         return $value;
     }
 
-    public function rpop($key)
+    public function rpop(string $key)
     {
         if (!$this->storage->hasKey($key)) {
             return null;
@@ -99,12 +96,12 @@ class Lists
         return $value;
     }
 
-    public function rpoplpush($source, $destination)
+    public function rpoplpush(string $source, string $destination)
     {
         if (!$this->storage->hasKey($source)) {
             return null;
         }
-        $sourceList      = $this->storage->getOrCreateList($source);
+        $sourceList = $this->storage->getOrCreateList($source);
         $destinationList = $this->storage->getOrCreateList($destination);
 
         $value = $sourceList->pop();
@@ -117,7 +114,7 @@ class Lists
         return $value;
     }
 
-    public function llen($key)
+    public function llen(string $key): int
     {
         if (!$this->storage->hasKey($key)) {
             return 0;
@@ -126,7 +123,7 @@ class Lists
         return $this->storage->getOrCreateList($key)->count();
     }
 
-    public function lindex($key, $index)
+    public function lindex(string $key, int $index)
     {
         $len = $this->llen($key);
         if ($len === 0) {
@@ -136,7 +133,6 @@ class Lists
         $list = $this->storage->getOrCreateList($key);
 
         // LINDEX actually checks the integer *after* checking the list and type
-        $index = $this->coerceInteger($index);
 
         if ($index < 0) {
             $index += $len;
@@ -148,14 +144,11 @@ class Lists
         return $list->offsetGet($index);
     }
 
-    public function lrange($key, $start, $stop)
+    public function lrange(string $key, int $start, int $stop): array
     {
         if (!$this->storage->hasKey($key)) {
-            return array();
+            return [];
         }
-
-        $start = $this->coerceInteger($start);
-        $stop  = $this->coerceInteger($stop);
 
         $list = $this->storage->getOrCreateList($key);
 
@@ -171,7 +164,7 @@ class Lists
         }
 
         if ($stop < $start || $stop < 0 || $start > $len) {
-            return array();
+            return [];
         }
 
         $list->rewind();
@@ -179,10 +172,10 @@ class Lists
             $list->next();
         }
 
-        $ret = array();
+        $ret = [];
 
-        while($i <= $stop) {
-            $ret []= $list->current();
+        while ($i <= $stop) {
+            $ret[] = $list->current();
             $list->next();
             ++$i;
         }
@@ -190,17 +183,8 @@ class Lists
         return $ret;
     }
 
-    public function setClient(Client $client)
+    public function setClient(Client $client): void
     {
         $this->storage = $client->getDatabase();
-    }
-
-    private function coerceInteger($value)
-    {
-        $int = (int)$value;
-        if ((string)$int !== (string)$value) {
-            throw new Exception('ERR value is not an integer or out of range');
-        }
-        return $int;
     }
 }
