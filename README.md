@@ -194,7 +194,7 @@ $ php composer.phar install
 ## Docker
 
 This project is also available as a [docker](https://www.docker.com/) image.
-Using the [clue/php-redis-server](https://registry.hub.docker.com/u/clue/php-redis-server/) image is as easy as running this:
+Using the [clue/php-redis-server](https://registry.hub.docker.com/r/clue/php-redis-server/) image is as easy as running this:
 
 ```bash
 $ docker run -d clue/php-redis-server
